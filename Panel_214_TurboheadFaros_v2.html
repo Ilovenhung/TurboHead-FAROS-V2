@@ -1850,79 +1850,107 @@ function stopModule(){
 
 /* ════════════════════════════════════════════════
    HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN THỰC
-════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════ */
+
+// Biến toàn cục để quản lý bộ đếm thời gian liên tục, tránh bị trùng lặp xung đột bộ nhớ
 let licenseTimerInterval = null;
 
 function updateDashboardUI(keyVal, keyData) {
-    let expiresAt = keyData ? (keyData.expiresAt || keyData.expire) : null; //
-
-    // ÉP KIỂU VỀ SỐ NẾU LÀ TIMESTAMP DẠNG CHUỖI SỐ
-    if (expiresAt && !isNaN(expiresAt)) {
-        expiresAt = parseInt(expiresAt);
-    } 
-    // NẾU LÀ CHUỖI ĐỊNH DẠNG NGÀY (VD: "2026-12-31") THÌ CHUYỂN THÀNH MILISECONDS
-    else if (expiresAt && typeof expiresAt === 'string') {
-        expiresAt = new Date(expiresAt).getTime();
-    }
-
     // 1. Hiển thị chính xác mã Key khách nhập lên thanh Strip thông tin
-    const keyDisplay = document.getElementById('display-user-key'); //
+    const keyDisplay = document.getElementById('display-user-key');
     if (keyDisplay && keyVal) {
-        keyDisplay.textContent = keyVal; //
+        keyDisplay.textContent = keyVal;
     }
 
-    const licenseDisplay = document.getElementById('display-license-status'); //
-    const bannerExpText = document.getElementById('banner-expiry-text'); //
-    if (!licenseDisplay) return; //
+    const licenseDisplay = document.getElementById('display-license-status');
+    const bannerExpText = document.getElementById('banner-expiry-text');
 
-    // 2. KIỂM TRA ĐIỀU KIỆN VĨNH VIỄN CHUẨN XÁC
-    // Key vĩnh viễn là key không có thời hạn, hoặc chứa chữ "vinhvien"/"permanent", hoặc expiresAt không hợp lệ sau khi đã ép kiểu
-    if (!expiresAt || isNaN(expiresAt) || String(expiresAt).toLowerCase().includes('vinhvien')) {
-        licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>'; //
-        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban'; //
-        if (licenseTimerInterval) clearInterval(licenseTimerInterval); //
+    if (!licenseDisplay) return;
+
+    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
+    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
+
+    // Chuyển mã Key về chữ hoa để quét kiểm tra định dạng chính xác
+    const keyUpper = String(keyVal).toUpperCase();
+    let expiresAt = null;
+
+    // Lấy thời điểm người dùng bắt đầu mở phiên đăng nhập hiện tại từ LocalStorage
+    // Nếu chưa có, sử dụng thời gian thực tại làm mốc kích hoạt phiên
+    let loginTime = localStorage.getItem('faros_login_timestamp');
+    if (!loginTime) {
+        loginTime = Date.now();
+        localStorage.setItem('faros_login_timestamp', loginTime);
+    } else {
+        loginTime = Number(loginTime);
+    }
+
+    // 2. XỬ LÝ NHẬN DIỆN THỜI HẠN THEO ĐỊNH DẠNG MÃ KEY VÀ TRƯỜNG HỢP VĨNH VIỄN
+    if (keyUpper.includes('-1D-')) {
+        // Key 1 ngày = Thời điểm đăng nhập + 24 giờ
+        expiresAt = loginTime + (1 * 24 * 60 * 60 * 1000);
+    } 
+    else if (keyUpper.includes('-7D-')) {
+        // Key 7 ngày = Thời điểm đăng nhập + 7 ngày
+        expiresAt = loginTime + (7 * 24 * 60 * 60 * 1000);
+    } 
+    else if (keyUpper.includes('-15D-')) {
+        // Key 15 ngày = Thời điểm đăng nhập + 15 ngày
+        expiresAt = loginTime + (15 * 24 * 60 * 60 * 1000);
+    }
+    else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) {
+        // Key 30 ngày = Thời điểm đăng nhập + 30 ngày
+        expiresAt = loginTime + (30 * 24 * 60 * 60 * 1000);
+    }
+    else {
+        // Các trường hợp Key còn lại hoặc không chứa chuỗi nhận diện ngày -> Coi như Vĩnh viễn
+        licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
+        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
+        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
-    if (licenseTimerInterval) clearInterval(licenseTimerInterval); //
-
     // 3. HÀM ĐẾM NGƯỢC THỜI GIAN THỰC (GIỜ:PHÚT:GIÂY)
     function renderCountdown() {
-        const diff = expiresAt - Date.now(); //
+        const diff = expiresAt - Date.now();
 
         // Nếu Key đã hết hạn dùng
         if (diff <= 0) {
-            licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn</span>'; //
-            if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn sử dụng!'; //
-            clearInterval(licenseTimerInterval); //
+            licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn</span>';
+            if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn sử dụng!';
+            clearInterval(licenseTimerInterval);
             return;
         }
 
         // Bóc tách mốc thời gian từ số mili-giây còn lại
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24)); //
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); //
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)); //
-        const secs = Math.floor((diff % (1000 * 60)) / 1000); //
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
+        // Chuẩn hóa định dạng thêm số 0 ở trước nếu số nhỏ hơn 10 (Ví dụ: 09 thay vì 9)
         const formatH = String(hours).padStart(2, '0');
         const formatM = String(mins).padStart(2, '0');
         const formatS = String(secs).padStart(2, '0');
 
         // Hiển thị ra màn hình giao diện
-        if (days > 0) { //
-            licenseDisplay.innerHTML = `<span style="color:#67e8f9;">Còn ${days} ngày <span style="font-family:monospace; font-weight:bold;">${formatH}:${formatM}:${formatS}</span></span>`; //
-            if (bannerExpText) bannerExpText.textContent = `Key hợp lệ · Còn ${days} ngày`; //
+        if (days > 0) {
+            // Trường hợp còn nhiều hơn 1 ngày sử dụng
+            licenseDisplay.innerHTML = `<span style="color:#67e8f9;">Còn ${days} ngày <span style="font-family:monospace; font-weight:bold;">${formatH}:${formatM}:${formatS}</span></span>`;
+            if (bannerExpText) bannerExpText.textContent = `Key hợp lệ · Còn ${days} ngày`;
         } else {
-            licenseDisplay.innerHTML = `<span style="color:#f59e0b; font-family:monospace; font-weight:bold; font-size:13px;"><i class="fa-solid fa-clock"></i> ${formatH}:${formatM}:${formatS}</span>`; //
-            if (bannerExpText) bannerExpText.textContent = `Key sắp hết hạn · Còn ${formatH}:${formatM}:${formatS}`; //
+            // Trường hợp cấp bách còn dưới 24 giờ (Đổi sang màu Cam neon cảnh báo)
+            licenseDisplay.innerHTML = `<span style="color:#f59e0b; font-family:monospace; font-weight:bold; font-size:13px;"><i class="fa-solid fa-clock"></i> ${formatH}:${formatM}:${formatS}</span>`;
+            if (bannerExpText) bannerExpText.textContent = `Key sắp hết hạn · Còn ${formatH}:${formatM}:${formatS}`;
         }
     }
 
-    // Chạy kích hoạt lập tức lần đầu
-    renderCountdown(); //
-    licenseTimerInterval = setInterval(renderCountdown, 1000); //
+    // Chạy kích hoạt lập tức lần đầu để không bị lag chữ mặc định khi load trang
+    renderCountdown();
+
+    // Thiết lập vòng lặp đếm lùi chính xác sau mỗi giây (1000ms)
+    licenseTimerInterval = setInterval(renderCountdown, 1000);
 }
+
 
 /* ════════════════════════════════════════════════
    GIÁM SÁT KEY REAL-TIME
@@ -1939,6 +1967,7 @@ function startKeyWatcher(keyVal) {
             stopKeyWatcher();
             localStorage.removeItem('faros_current_key');
             localStorage.removeItem('faros_key_data');
+            localStorage.removeItem('faros_login_timestamp');
             showBlockedOverlay('Key đã bị xóa khỏi hệ thống!');
             return;
         }
@@ -1947,7 +1976,7 @@ function startKeyWatcher(keyVal) {
             stopKeyWatcher();
             showBlockedOverlay('Key của bạn đã bị vô hiệu hóa bởi admin!');
             return;
-        }
+        }-
         if (data.expiresAt && Date.now() > data.expiresAt) {
             stopKeyWatcher();
             showBlockedOverlay(`Key đã hết hạn lúc ${formatDate(data.expiresAt)}`);
@@ -1980,6 +2009,11 @@ async function checkAutoLogin() {
             if (keyData && !keyData.expiresAt && keyData.expire) {
                 keyData.expiresAt = keyData.expire;
             }
+
+            // Đồng bộ ghi nhận mốc thời gian bắt đầu phiên đăng nhập tự động
+            if (!localStorage.getItem('faros_login_timestamp')) {
+                localStorage.setItem('faros_login_timestamp', Date.now());
+            }
             
             // Kích hoạt đổ dữ liệu lên đồng hồ đếm giây hệ thống
             updateDashboardUI(savedKey, keyData);
@@ -2004,6 +2038,7 @@ async function checkAutoLogin() {
 function doLogout(){
     localStorage.removeItem(typeof LS_KEY !== 'undefined' ? LS_KEY : 'faros_current_key');
     localStorage.removeItem(typeof LS_KEYDATA !== 'undefined' ? LS_KEYDATA : 'faros_key_data');
+    localStorage.removeItem('faros_login_timestamp');
     stopKeyWatcher();
     if(typeof sessionTid !== 'undefined' && sessionTid) clearInterval(sessionTid);
     
