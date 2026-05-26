@@ -1848,7 +1848,7 @@ function stopModule(){
     showToast('Module đã dừng','fa-circle-stop','#ef4444');
 }
 
-/* ════════════════════════════════════════════════
+/* /* ════════════════════════════════════════════════
    HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN THỰC
    ════════════════════════════════════════════════ */
 
@@ -1856,6 +1856,15 @@ function stopModule(){
 let licenseTimerInterval = null;
 
 function updateDashboardUI(keyVal, keyData) {
+    // ÉP KIỂU SỐ (NUMBER): Chuyển đổi dữ liệu hạn dùng từ Firebase thành số dạng mili-giây tuyệt đối
+    let expiresAt = null;
+    if (keyData) {
+        const rawExpire = keyData.expiresAt || keyData.expire;
+        if (rawExpire && rawExpire !== "vinhvien") {
+            expiresAt = Number(rawExpire); // Sửa triệt để lỗi NaN khiến đồng hồ bị đứng ở "Vĩnh viễn"
+        }
+    }
+
     // 1. Hiển thị chính xác mã Key khách nhập lên thanh Strip thông tin
     const keyDisplay = document.getElementById('display-user-key');
     if (keyDisplay && keyVal) {
@@ -1867,47 +1876,16 @@ function updateDashboardUI(keyVal, keyData) {
 
     if (!licenseDisplay) return;
 
-    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
-    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
-
-    // Chuyển mã Key về chữ hoa để quét kiểm tra định dạng chính xác
-    const keyUpper = String(keyVal).toUpperCase();
-    let expiresAt = null;
-
-    // Lấy thời điểm người dùng bắt đầu mở phiên đăng nhập hiện tại từ LocalStorage
-    // Nếu chưa có, sử dụng thời gian thực tại làm mốc kích hoạt phiên
-    let loginTime = localStorage.getItem('faros_login_timestamp');
-    if (!loginTime) {
-        loginTime = Date.now();
-        localStorage.setItem('faros_login_timestamp', loginTime);
-    } else {
-        loginTime = Number(loginTime);
-    }
-
-    // 2. XỬ LÝ NHẬN DIỆN THỜI HẠN THEO ĐỊNH DẠNG MÃ KEY VÀ TRƯỜNG HỢP VĨNH VIỄN
-    if (keyUpper.includes('-1D-')) {
-        // Key 1 ngày = Thời điểm đăng nhập + 24 giờ
-        expiresAt = loginTime + (1 * 24 * 60 * 60 * 1000);
-    } 
-    else if (keyUpper.includes('-7D-')) {
-        // Key 7 ngày = Thời điểm đăng nhập + 7 ngày
-        expiresAt = loginTime + (7 * 24 * 60 * 60 * 1000);
-    } 
-    else if (keyUpper.includes('-15D-')) {
-        // Key 15 ngày = Thời điểm đăng nhập + 15 ngày
-        expiresAt = loginTime + (15 * 24 * 60 * 60 * 1000);
-    }
-    else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) {
-        // Key 30 ngày = Thời điểm đăng nhập + 30 ngày
-        expiresAt = loginTime + (30 * 24 * 60 * 60 * 1000);
-    }
-    else {
-        // Các trường hợp Key còn lại hoặc không chứa chuỗi nhận diện ngày -> Coi như Vĩnh viễn
+    // 2. XỬ LÝ TRƯỜNG HỢP KEY VĨNH VIỄN HOẶC KHÔNG HỢP LỆ
+    if (!expiresAt || isNaN(expiresAt)) {
         licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
+
+    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
+    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
 
     // 3. HÀM ĐẾM NGƯỢC THỜI GIAN THỰC (GIỜ:PHÚT:GIÂY)
     function renderCountdown() {
@@ -1967,7 +1945,6 @@ function startKeyWatcher(keyVal) {
             stopKeyWatcher();
             localStorage.removeItem('faros_current_key');
             localStorage.removeItem('faros_key_data');
-            localStorage.removeItem('faros_login_timestamp');
             showBlockedOverlay('Key đã bị xóa khỏi hệ thống!');
             return;
         }
@@ -1976,7 +1953,7 @@ function startKeyWatcher(keyVal) {
             stopKeyWatcher();
             showBlockedOverlay('Key của bạn đã bị vô hiệu hóa bởi admin!');
             return;
-        }-
+        }
         if (data.expiresAt && Date.now() > data.expiresAt) {
             stopKeyWatcher();
             showBlockedOverlay(`Key đã hết hạn lúc ${formatDate(data.expiresAt)}`);
@@ -2009,11 +1986,6 @@ async function checkAutoLogin() {
             if (keyData && !keyData.expiresAt && keyData.expire) {
                 keyData.expiresAt = keyData.expire;
             }
-
-            // Đồng bộ ghi nhận mốc thời gian bắt đầu phiên đăng nhập tự động
-            if (!localStorage.getItem('faros_login_timestamp')) {
-                localStorage.setItem('faros_login_timestamp', Date.now());
-            }
             
             // Kích hoạt đổ dữ liệu lên đồng hồ đếm giây hệ thống
             updateDashboardUI(savedKey, keyData);
@@ -2038,7 +2010,6 @@ async function checkAutoLogin() {
 function doLogout(){
     localStorage.removeItem(typeof LS_KEY !== 'undefined' ? LS_KEY : 'faros_current_key');
     localStorage.removeItem(typeof LS_KEYDATA !== 'undefined' ? LS_KEYDATA : 'faros_key_data');
-    localStorage.removeItem('faros_login_timestamp');
     stopKeyWatcher();
     if(typeof sessionTid !== 'undefined' && sessionTid) clearInterval(sessionTid);
     
@@ -2367,3 +2338,5 @@ window.addEventListener('load', async () => {
 </script>
 </body>
 </html>
+
+
