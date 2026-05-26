@@ -780,14 +780,18 @@
     </div>
 
     <!-- Key Info Strip -->
-        <div class="key-strip" id="key-strip">
+    <div class="key-strip" id="key-strip">
         <i class="fa-solid fa-shield-keyhole"></i>
         <div>
-            <div style="font-size:10px;color:#334155;margin-bottom:2px;letter-spacing:1px;text-transform:uppercase;">Trạng thái bản quyền</div>
-            <div class="key-strip-val" id="key-strip-val">FAROS</div>
+            <div style="font-size:10px;color:#cbd5e1;margin-bottom:2px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">Mã Key Đăng Nhập</div>
+            <div class="topnav-title" id="display-user-key" style="font-size:13px;font-weight:bold;color:#67e8f9;font-family:monospace;">Đang tải...</div>
         </div>
-        <div class="key-strip-expire" id="key-strip-expire">Đang kiểm tra...</div>
+        <div>
+            <div style="font-size:10px;color:#cbd5e1;margin-bottom:2px;letter-spacing:1px;text-transform:uppercase;font-weight:600;text-align:right;">Hạn Sử Dụng</div>
+            <div class="stat-val text-cyan" id="display-license-status" style="font-size:12px;font-weight:700;text-align:right;">Đang tính toán...</div>
+        </div>
     </div>
+
 
     <div class="info-banner">
         <img class="banner-logo"
@@ -1438,51 +1442,60 @@ function timeLeft(expiresAt) {
 ════════════════════════════════════════════════ */
 function updateDashboardUI(keyVal, keyData) {
     const expiresAt = keyData.expiresAt || null;
-    const stripVal = document.getElementById('key-strip-val');
-    const stripExp = document.getElementById('key-strip-expire');
 
-    // 1. Cập nhật tên Key lên thanh Strip
-    if (stripVal) {
-        const display = keyVal.length > 16 ? keyVal.substring(0,6) + '••••' + keyVal.slice(-4) : keyVal;
-        stripVal.textContent = display;
+    // 1. Đổi chữ "Đang tải..." thành chính xác chuỗi Key khách đã nhập vào
+    const keyDisplay = document.getElementById('display-user-key');
+    if (keyDisplay && keyVal) {
+        keyDisplay.textContent = keyVal;
     }
 
-    // 2. Cập nhật hạn sử dụng lên thanh Strip
-    if (stripExp) {
+    // 2. Tính toán hạn dùng thực tế của Key để hiển thị vào Trạng thái bản quyền
+    const licenseDisplay = document.getElementById('display-license-status');
+    if (licenseDisplay) {
         if (!expiresAt) {
-            stripExp.innerHTML = '<span style="color:var(--green-light);font-size:11px;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
+            licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
         } else {
-            const tl = timeLeft(expiresAt);
-            const color = expiresAt - Date.now() < 86400000*3 ? '#f59e0b' : '#67e8f9';
-            stripExp.innerHTML = `<span style="color:${color};font-size:11px;">${tl}</span>`;
+            const diff = expiresAt - Date.now();
+            if (diff <= 0) {
+                licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn</span>';
+            } else {
+                // Tính toán ngày, giờ, phút từ số mili-giây còn lại
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                if (days > 0) {
+                    licenseDisplay.textContent = `Còn ${days} ngày ${hours} giờ`;
+                    licenseDisplay.style.color = '#67e8f9'; // Màu cyan neon khi còn nhiều hạn
+                } else if (hours > 0) {
+                    licenseDisplay.textContent = `Còn ${hours} giờ ${mins} ph`;
+                    licenseDisplay.style.color = '#f59e0b'; // Đổi sang màu cam cảnh báo nếu dưới 1 ngày
+                } else {
+                    licenseDisplay.textContent = `Còn ${mins} phút`;
+                    licenseDisplay.style.color = '#ff453a'; // Đổi sang màu đỏ nguy hiểm nếu dưới 1 giờ
+                }
+            }
         }
     }
 
-    // 3. Cập nhật hạn sử dụng đồng bộ lên cả Info Banner bên dưới
+    // 3. Đồng bộ cập nhật lên Info Banner lớn ở giữa màn hình nếu có
     const bannerExpText = document.getElementById('banner-expiry-text');
-    const bannerExpIcon = document.getElementById('banner-expiry-icon');
-
-    if (!expiresAt) {
-        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
-        if (bannerExpIcon) {
-            bannerExpIcon.className = 'fa-solid fa-check';
-            bannerExpIcon.style.color = '';
-        }
-    } else {
-        const tl = timeLeft(expiresAt);
-        if (bannerExpText) bannerExpText.textContent = `Key hợp lệ · ${tl}`;
-        if (bannerExpIcon) {
-            // Nếu key còn dưới 3 ngày thì đổi icon sang màu vàng cảnh báo, ngược lại giữ màu mặc định
-            if ((expiresAt - Date.now()) < 86400000 * 3) {
-                bannerExpIcon.className = 'fa-solid fa-clock';
-                bannerExpIcon.style.color = '#f59e0b';
+    if (bannerExpText) {
+        if (!expiresAt) {
+            bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
+        } else {
+            const diff = expiresAt - Date.now();
+            if (diff <= 0) {
+                bannerExpText.textContent = 'Key đã hết hạn sử dụng!';
             } else {
-                bannerExpIcon.className = 'fa-solid fa-check';
-                bannerExpIcon.style.color = '';
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                bannerExpText.textContent = days > 0 ? `Key hợp lệ · Còn ${days} ngày` : `Key hợp lệ · Còn ${hours} giờ`;
             }
         }
     }
 }
+
 
 
 /* ════════════════════════════════════════════════
