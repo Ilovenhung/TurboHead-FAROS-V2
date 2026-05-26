@@ -1848,6 +1848,434 @@ function stopModule(){
     showToast('Module đã dừng','fa-circle-stop','#ef4444');
 }
 
+/* /* ════════════════════════════════════════════════
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN THỰC
+   ════════════════════════════════════════════════ */
+
+// Biến toàn cục để quản lý bộ đếm thời gian liên tục, tránh bị trùng lặp xung đột bộ nhớ
+let licenseTimerInterval = null;
+
+function updateDashboardUI(keyVal, keyData) {
+    // ÉP KIỂU SỐ (NUMBER): Chuyển đổi dữ liệu hạn dùng từ Firebase thành số dạng mili-giây tuyệt đối
+    let expiresAt = null;
+    if (keyData) {
+        const rawExpire = keyData.expiresAt || keyData.expire;
+        if (rawExpire && rawExpire !== "vinhvien") {
+            expiresAt = Number(rawExpire); // Sửa triệt để lỗi NaN khiến đồng hồ bị đứng ở "Vĩnh viễn"
+        }
+    }
+
+    // 1. Hiển thị chính xác mã Key khách nhập lên thanh Strip thông tin
+    const keyDisplay = document.getElementById('display-user-key');
+    if (keyDisplay && keyVal) {
+        keyDisplay.textContent = keyVal;
+    }
+
+    const licenseDisplay = document.getElementById('display-license-status');
+    const bannerExpText = document.getElementById('banner-expiry-text');
+
+    if (!licenseDisplay) return;
+
+    // 2. XỬ LÝ TRƯỜNG HỢP KEY VĨNH VIỄN HOẶC KHÔNG HỢP LỆ
+    if (!expiresAt || isNaN(expiresAt)) {
+        licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
+        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
+        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
+        return;
+    }
+
+    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
+    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
+
+    // 3. HÀM ĐẾM NGƯỢC THỜI GIAN THỰC (GIỜ:PHÚT:GIÂY)
+    function renderCountdown() {
+        const diff = expiresAt - Date.now();
+
+        // Nếu Key đã hết hạn dùng
+        if (diff <= 0) {
+            licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn</span>';
+            if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn sử dụng!';
+            clearInterval(licenseTimerInterval);
+            return;
+        }
+
+        // Bóc tách mốc thời gian từ số mili-giây còn lại
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        // Chuẩn hóa định dạng thêm số 0 ở trước nếu số nhỏ hơn 10 (Ví dụ: 09 thay vì 9)
+        const formatH = String(hours).padStart(2, '0');
+        const formatM = String(mins).padStart(2, '0');
+        const formatS = String(secs).padStart(2, '0');
+
+        // Hiển thị ra màn hình giao diện
+        if (days > 0) {
+            // Trường hợp còn nhiều hơn 1 ngày sử dụng
+            licenseDisplay.innerHTML = `<span style="color:#67e8f9;">Còn ${days} ngày <span style="font-family:monospace; font-weight:bold;">${formatH}:${formatM}:${formatS}</span></span>`;
+            if (bannerExpText) bannerExpText.textContent = `Key hợp lệ · Còn ${days} ngày`;
+        } else {
+            // Trường hợp cấp bách còn dưới 24 giờ (Đổi sang màu Cam neon cảnh báo)
+            licenseDisplay.innerHTML = `<span style="color:#f59e0b; font-family:monospace; font-weight:bold; font-size:13px;"><i class="fa-solid fa-clock"></i> ${formatH}:${formatM}:${formatS}</span>`;
+            if (bannerExpText) bannerExpText.textContent = `Key sắp hết hạn · Còn ${formatH}:${formatM}:${formatS}`;
+        }
+    }
+
+    // Chạy kích hoạt lập tức lần đầu để không bị lag chữ mặc định khi load trang
+    renderCountdown();
+
+    // Thiết lập vòng lặp đếm lùi chính xác sau mỗi giây (1000ms)
+    licenseTimerInterval = setInterval(renderCountdown, 1000);
+}
+
+
+/* ════════════════════════════════════════════════
+   GIÁM SÁT KEY REAL-TIME
+════════════════════════════════════════════════ */
+let keyWatcherRef = null;
+
+function startKeyWatcher(keyVal) {
+    if (!firebaseReady || !db) return;
+    stopKeyWatcher();
+    const path = keyToPath(keyVal);
+    keyWatcherRef = db.ref('keys/' + path);
+    keyWatcherRef.on('value', snap => {
+        if (!snap.exists()) {
+            stopKeyWatcher();
+            localStorage.removeItem('faros_current_key');
+            localStorage.removeItem('faros_key_data');
+            showBlockedOverlay('Key đã bị xóa khỏi hệ thống!');
+            return;
+        }
+        const data = snap.val();
+        if (data.active === false) {
+            stopKeyWatcher();
+            showBlockedOverlay('Key của bạn đã bị vô hiệu hóa bởi admin!');
+            return;
+        }
+        if (data.expiresAt && Date.now() > data.expiresAt) {
+            stopKeyWatcher();
+            showBlockedOverlay(`Key đã hết hạn lúc ${formatDate(data.expiresAt)}`);
+        }
+    });
+}
+
+function stopKeyWatcher() {
+    if (keyWatcherRef) {
+        keyWatcherRef.off('value');
+        keyWatcherRef = null;
+    }
+}
+
+
+/* ════════════════════════════════════════════════
+   AUTO LOGIN
+════════════════════════════════════════════════ */
+async function checkAutoLogin() {
+    // 1. Lấy dữ liệu key đã được file nhapkey.html đóng gói lưu dưới máy khách
+    const savedKey = localStorage.getItem('faros_current_key');
+    const savedData = localStorage.getItem('faros_key_data');
+
+    // 2. Nếu có dữ liệu key hợp lệ, tiến hành phân tách và đổ lên giao diện
+    if (savedKey && savedData) {
+        try {
+            const keyData = JSON.parse(savedData);
+            
+            // Đồng bộ định dạng tên biến truyền từ file đăng nhập
+            if (keyData && !keyData.expiresAt && keyData.expire) {
+                keyData.expiresAt = keyData.expire;
+            }
+            
+            // Kích hoạt đổ dữ liệu lên đồng hồ đếm giây hệ thống
+            updateDashboardUI(savedKey, keyData);
+            
+            if (typeof showToast === 'function') {
+                showToast('Đăng nhập tự động thành công!', 'fa-shield-check', '#10b981');
+            }
+        } catch (e) {
+            console.error("Lỗi giải mã cấu trúc key đăng nhập:", e);
+            window.location.href = 'nhapkey.html';
+        }
+    } else {
+        // 3. Không tìm thấy phiên đăng nhập cũ, sút thẳng ra ngoài
+        window.location.href = 'nhapkey.html';
+    }
+}
+
+
+/* ════════════════════════════════════════════════
+   LOGOUT
+════════════════════════════════════════════════ */
+function doLogout(){
+    localStorage.removeItem(typeof LS_KEY !== 'undefined' ? LS_KEY : 'faros_current_key');
+    localStorage.removeItem(typeof LS_KEYDATA !== 'undefined' ? LS_KEYDATA : 'faros_key_data');
+    stopKeyWatcher();
+    if(typeof sessionTid !== 'undefined' && sessionTid) clearInterval(sessionTid);
+    
+    const blockedOverlay = document.getElementById('blocked-overlay');
+    if (blockedOverlay) blockedOverlay.classList.remove('show');
+    
+    if (typeof showToast === 'function') showToast('Đã đăng xuất!','fa-right-from-bracket','#f97316');
+    if (typeof showRipple === 'function') showRipple();
+    
+    setTimeout(()=>{
+        const dashboard = document.getElementById('dashboard');
+        const loginScreen = document.getElementById('login-screen');
+        const keyInput = document.getElementById('key-input');
+        const keyStrength = document.getElementById('key-strength');
+        const sessionTimer = document.getElementById('session-timer');
+        
+        if (dashboard) dashboard.classList.remove('active');
+        if (loginScreen) loginScreen.classList.add('active');
+        if (keyInput) keyInput.value = '';
+        if (keyStrength) keyStrength.classList.remove('vis');
+        if (sessionTimer) sessionTimer.textContent = '00:00';
+        
+        const totalModules = typeof TOTAL !== 'undefined' ? TOTAL : 10;
+        for(let i = 1; i <= totalModules; i++){
+            const c = document.getElementById('card-' + i);
+            const p = document.getElementById('pill-' + i);
+            if(c){ 
+                c.classList.remove('on'); 
+                const cb = c.querySelector('input[type=checkbox]'); 
+                if(cb) cb.checked = false; 
+            }
+            if(p) p.textContent = 'OFF';
+        }
+        if (typeof updateCount === 'function') updateCount();
+        stopModule();
+    }, 420);
+}
+
+/* ════════════════════════════════════════════════
+   QUICK ACTIONS
+════════════════════════════════════════════════ */
+function quickAction(type) {
+    if (typeof showRipple === 'function') showRipple();
+    
+    const totalModules = typeof TOTAL !== 'undefined' ? TOTAL : 10; 
+
+    if (type === 'all-on') {
+        // Bật tất cả
+        for (let i = 1; i <= totalModules; i++) {
+            const card = document.getElementById('card-' + i);
+            const pill = document.getElementById('pill-' + i);
+            const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
+            
+            if (card) card.classList.add('on');
+            if (pill) pill.textContent = 'ON';
+            if (checkbox) checkbox.checked = true;
+        }
+        if (typeof updateCount === 'function') updateCount();
+        if (typeof showToast === 'function') showToast('Đã bật tất cả module!', 'fa-power-off', '#60a5fa');
+    } 
+    else if (type === 'all-off') {
+        // Tắt tất cả
+        for (let i = 1; i <= totalModules; i++) {
+            const card = document.getElementById('card-' + i);
+            const pill = document.getElementById('pill-' + i);
+            const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
+            
+            if (card) card.classList.remove('on');
+            if (pill) pill.textContent = 'OFF';
+            if (checkbox) checkbox.checked = false;
+        }
+        if (typeof updateCount === 'function') updateCount();
+        if (typeof showToast === 'function') showToast('Đã tắt tất cả module!', 'fa-circle-xmark', '#ef4444');
+    }
+}
+
+
+/* ════════════════════════════════════════════════
+   CARD TOGGLE + MODAL
+════════════════════════════════════════════════ */
+let mTid = null;
+function toggleCard(cb, cardId, name, iconClass){
+    const card = document.getElementById(cardId);
+    const pill = document.getElementById(cardId.replace('card-','pill-'));
+    if (typeof showRipple === 'function') showRipple();
+    if(cb.checked){
+        showActModal(name, iconClass, ()=>{
+            if (card) card.classList.add('on'); 
+            if (pill) pill.textContent = 'ON'; 
+            if (typeof updateCount === 'function') updateCount();
+            if (typeof showToast === 'function') showToast(name + ' đã kích hoạt!', 'fa-circle-check', '#60a5fa');
+        });
+    } else {
+        showDeactModal(name, iconClass, ()=>{
+            if (card) card.classList.remove('on'); 
+            if (pill) pill.textContent = 'OFF'; 
+            if (typeof updateCount === 'function') updateCount();
+            if (typeof showToast === 'function') showToast(name + ' đã tắt', 'fa-circle-xmark', '#64748b');
+        });
+    }
+}
+
+function getSteps(){ return [1,2,3,4].map(i=>document.getElementById('ms'+i)); }
+
+function showActModal(name, iconClass, done){
+    const ov = document.getElementById('modal-overlay'), box = document.getElementById('modal-box');
+    const steps = getSteps();
+    if (box) box.classList.remove('deact');
+    
+    const modalIcon = document.getElementById('modal-icon');
+    const modalTitle = document.getElementById('modal-title');
+    const modalSub = document.getElementById('modal-sub');
+    
+    if (modalIcon) modalIcon.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    if (modalTitle) modalTitle.textContent = 'Đang kích hoạt...';
+    if (modalSub) modalSub.textContent = name;
+    
+    steps.forEach(s => { if(s) s.classList.remove('done'); });
+    if (ov) ov.classList.add('show');
+    const D = 380;
+    steps.forEach((s,i) => setTimeout(() => { if(s) s.classList.add('done'); }, D*(i+1)));
+    clearTimeout(mTid);
+    mTid = setTimeout(() => {
+        if (modalTitle) modalTitle.textContent = '✓ Kích hoạt thành công!';
+        setTimeout(() => { if (ov) ov.classList.remove('show'); done(); }, 650);
+    }, D*steps.length+420);
+}
+
+function showDeactModal(name, iconClass, done){
+    const ov = document.getElementById('modal-overlay'), box = document.getElementById('modal-box');
+    const steps = getSteps();
+    if (box) box.classList.add('deact');
+    
+    const modalIcon = document.getElementById('modal-icon');
+    const modalTitle = document.getElementById('modal-title');
+    const modalSub = document.getElementById('modal-sub');
+    
+    if (modalIcon) modalIcon.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    if (modalTitle) modalTitle.textContent = 'Đang tắt...';
+    if (modalSub) modalSub.textContent = name;
+    
+    steps.forEach(s => { if(s) s.classList.remove('done'); });
+    const labels = ['Dừng module...','Xóa cấu hình...','Khôi phục hệ thống...','Hoàn tất!'];
+    steps.forEach((s,i) => { if(s && s.childNodes[1]) s.childNodes[1].textContent = ' ' + labels[i]; });
+    if (ov) ov.classList.add('show');
+    const D = 320;
+    steps.forEach((s,i) => setTimeout(() => { if(s) s.classList.add('done'); }, D*(i+1)));
+    clearTimeout(mTid);
+    mTid = setTimeout(() => {
+        if (modalTitle) modalTitle.textContent = '✓ Đã tắt thành công!';
+        setTimeout(() => {
+            if (ov) ov.classList.remove('show');
+            const orig = ['Khởi tạo module...','Nạp cấu hình...','Bypass bảo vệ...','Áp dụng hoàn tất!'];
+            steps.forEach((s,i) => { if(s && s.childNodes[1]) s.childNodes[1].textContent = ' ' + orig[i]; });
+            done();
+        }, 500);
+    }, D*steps.length+380);
+}
+
+/* ════════════════════════════════════════════════
+   MODULE RUNNER
+════════════════════════════════════════════════ */
+let modRunning = false, modTids = [];
+function clearMT(){ modTids.forEach(t=>clearTimeout(t)); modTids=[]; }
+function mt(fn,ms){ const id=setTimeout(fn,ms); modTids.push(id); }
+
+const ALL_GUNS = [
+    {name:'MP40',         cls:'gc-blue',  dmg:48,  rng:'45m',  spd:'★★★★★', rpm:857,  type:'SMG',     emoji:'🔫'},
+    {name:'UMP',        cls:'gc-grn',   dmg:44,  rng:'40m',  spd:'★★★★★', rpm:750,  type:'SMG',     emoji:'🔫'},
+    {name:'Desert Eagle', cls:'gc-ylw',   dmg:71,  rng:'35m',  spd:'★★★☆☆', rpm:300,  type:'Pistol',  emoji:'💥'},
+    {name:'M1014',        cls:'gc-red',   dmg:80,  rng:'18m',  spd:'★★★☆☆', rpm:200,  type:'Shotgun', emoji:'💣'},
+];
+
+function addLine(html,delay){
+    mt(()=>{
+        const o = document.getElementById('terminal-output');
+        const d = document.createElement('div'); d.className = 'term-line'; d.innerHTML = html;
+        if (o) { o.appendChild(d); o.scrollTop = o.scrollHeight; }
+    },delay);
+}
+
+function addProg(id,label,delay,fillDelay){
+    mt(()=>{
+        const o = document.getElementById('terminal-output');
+        const w = document.createElement('div'); w.className = 'term-prog-wrap';
+        w.innerHTML = `<div class="term-line"><span class="tc-pfx">▶</span> <span class="tc-cyan">${label}</span></div><div class="term-prog-bar"><div class="term-prog-fill" id="${id}"></div></div>`;
+        if (o) { o.appendChild(w); o.scrollTop = o.scrollHeight; }
+    },delay);
+    mt(()=>{ const b = document.getElementById(id); if(b) b.style.width = '100%'; },fillDelay);
+}
+
+function runModule(){
+    if(modRunning){ stopModule(); return; }
+    modRunning = true;
+    const btn = document.getElementById('btn-run');
+    const ic = document.getElementById('run-icon');
+    const lb = document.getElementById('run-label');
+    const tBox = document.getElementById('terminal-box');
+    const tOut = document.getElementById('terminal-output');
+    if (btn) btn.classList.add('running'); 
+    if (ic) ic.className = 'fa-solid fa-stop'; 
+    if (lb) lb.textContent = 'Dừng Module';
+    if (tBox) tBox.classList.add('open'); 
+    if (tOut) tOut.innerHTML = '';
+
+    let d = 0; const I = 210;
+
+    addLine(`<span class="tc-pfx">$</span><span class="tc-blue"> TurboHead FAROS</span> <span class="tc-dim">--inject --vip --build=2026</span>`,d); d+=I;
+    addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[BOOT]</span> <span class="tc-cyan"> Khởi động TurboHead FAROS v2.0...</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Platform  : Android 14 · ARM64 · Snapdragon 8 Gen 2</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : 12 GB · Available: 4.8 GB</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> GPU       : Adreno 740 · Driver: 512.0</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Temp      : 38°C · Battery: 92%</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · Anti-Ban · Firebase Verified</span>`,d); d+=I;
+    addProg('p-init','Khởi tạo kernel module VIP...',d,d+180); d+=I*2.2;
+    addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn"> ✓ Module VIP loaded — OK</span>`,d); d+=I;
+
+    addLine(`<span class="tc-dim">──── THỐNG KÊ TỪNG VŨ KHÍ ──────────────────</span>`,d); d+=I;
+    ALL_GUNS.forEach((g,i)=>{
+        addLine(`<span class="tc-pfx">  ${i===ALL_GUNS.length-1?'└─':'├─'}</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span>  <span class="tc-dim">DMG:</span><span class="tc-org"> ${g.dmg}</span>  <span class="tc-dim">RPM:</span><span class="tc-ylw"> ${g.rpm}</span>  <span class="tc-dim">RNG:</span><span class="tc-cyan"> ${g.rng}</span>  <span class="tc-dim">SPD:</span><span class="tc-grn"> ${g.spd}</span>  <span class="tc-dim">[${g.type}]</span>`, d+i*(I*.62));
+    });
+    d += ALL_GUNS.length*(I*.62)+I;
+
+    addProg('p-patch','Patching TurboHead FAROS V2.0 VIP...',d,d+250); d+=I*2.4;
+
+    addLine(`<span class="tc-dim">──── KẾT QUẢ INJECT VIP ────────────────────</span>`,d); d+=I;
+    ALL_GUNS.forEach((g,i)=>{
+        addLine(`<span class="tc-pfx">  ✓</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn"> ✓ PATCHED</span> <span class="tc-prp"> ✓ OPTIMIZED</span> <span class="tc-ylw"> ✓ VIP</span>`, d+i*(I*.5));
+    });
+    d += ALL_GUNS.length*(I*.5)+I;
+
+    addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[DONE]</span> <span class="tc-grn"> ✓ TurboHead FAROS V2 — HOẠT ĐỘNG!</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-prp"> Tỉ lệ Headshot dự kiến  : 88%+</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-cyan"> Số vũ khí được patch      : ${ALL_GUNS.length}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-ylw"> Chế độ                   : VIP TURBOHEAD VERIFIED</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">$</span><span class="tc-dim"> _</span><span class="blink-cur"></span>`,d); d+=I;
+
+    mt(()=>{
+        modRunning = false;
+        if (btn) btn.classList.remove('running');
+        if (ic) ic.className = 'fa-solid fa-rotate-right'; 
+        if (lb) lb.textContent = 'Chạy Lại';
+        if (typeof showRipple === 'function') showRipple();
+        if (typeof showToast === 'function') showToast('Module TurboHead V2 hoàn thành! ' + ALL_GUNS.length + ' vũ khí patched', 'fa-terminal', '#67e8f9');
+    },d);
+}
+
+function stopModule()){
+    clearMT(); modRunning = false;
+    const btn = document.getElementById('btn-run');
+    if(btn) btn.classList.remove('running');
+    const ic = document.getElementById('run-icon');
+    const lb = document.getElementById('run-label');
+    if (ic) ic.className = 'fa-solid fa-play';
+    if (lb) lb.textContent = 'Chạy Module';
+    
+    const o = document.getElementById('terminal-output');
+    if(!o) return;
+    const el = document.createElement('div'); el.className = 'term-line';
+    el.innerHTML = `<span class="tc-pfx">[STOP]</span> <span class="tc-red"> ⚠ Module bị dừng bởi người dùng.</span>`;
+    o.appendChild(el); o.scrollTop = o.scrollHeight;
+    if (typeof showToast === 'function') showToast('Module đã dừng', 'fa-circle-stop', '#ef4444');
+}
+
 /* ════════════════════════════════════════════════
    HỆ THỐNG BẢO MẬT FAROS - ANTI-COPY & ANTI-F12
    ════════════════════════════════════════════════ */
@@ -1889,10 +2317,10 @@ setInterval(() => {
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
     // Cho đồng hồ chạy NGAY LẬP TỨC khi vừa load trang, không đợi chờ gì cả
-    startRealTimeClock(); 
+    if (typeof startRealTimeClock === 'function') startRealTimeClock(); 
 
     // Sau đó mới xử lý Firebase và Đăng nhập tự động sau
-    await new Promise(res => setTimeout(res, firebaseReady ? 900 : 1400));
+    await new Promise(res => setTimeout(res, (typeof firebaseReady !== 'undefined' && firebaseReady) ? 900 : 1400));
     try {
         await checkAutoLogin();
     } catch(e) {
@@ -1900,7 +2328,7 @@ window.addEventListener('load', async () => {
     }
     
     // Gọi các hàm hiệu ứng ma trận, thông số sau
-    resizeCanvas();
+    if (typeof resizeCanvas === 'function') resizeCanvas();
     if(typeof drawMatrix === 'function') setInterval(drawMatrix, 45);
     if(typeof updateStats === 'function') {
         setInterval(updateStats, 2000);
@@ -1910,3 +2338,5 @@ window.addEventListener('load', async () => {
 </script>
 </body>
 </html>
+
+
