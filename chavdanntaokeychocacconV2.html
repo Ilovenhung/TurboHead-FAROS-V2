@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Admin Panel • FAROS SYSTEM</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --bg: #0b0b14; --surface: rgba(20, 20, 38, 0.85); --glass-border: rgba(255, 255, 255, 0.12);
+      --text: #f0f0f8; --text-secondary: #b0b0c8; --ios-blue: #0a84ff; --danger: #ff3b30; --success: #30d158; --warning: #ff9f0a; --radius-lg: 28px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      --shadow-glass: 0 8px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 30px 10px; overflow-y: auto; }
+    #dustCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+    
+    .glass-panel { display: none; background: var(--surface); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border: 1.5px solid var(--glass-border); border-radius: var(--radius-lg); padding: 26px 22px; width: 100%; max-width: 410px; box-shadow: var(--shadow-glass); margin: 4vh auto; }
+    .glass-panel h2 { text-align: center; margin-bottom: 22px; font-weight: 900; font-size: 1.4rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px rgba(10,132,255,0.3); }
+    
+    .input-group { margin-bottom: 16px; text-align: left; }
+    .input-group label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.2px; }
+    
+    .glass-input, .glass-select { width: 100%; padding: 14px; background: rgba(0,0,0,0.35); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: all 0.3s; }
+    .glass-input:focus, .glass-select:focus { border-color: var(--ios-blue); box-shadow: 0 0 12px rgba(10,132,255,0.25); }
+    .glass-input::placeholder { color: rgba(255,255,255,0.3); }
+    
+    .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #0a84ff, #005bb5); border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; letter-spacing: 0.3px; }
+    .btn-primary:active { transform: scale(0.97); }
+    
+    .key-list { margin-top: 20px; max-height: 340px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 14px; padding: 8px; border: 1.5px solid var(--glass-border); }
+    .key-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .key-item:last-child { border-bottom: none; }
+    
+    .key-info span { color: #30d158; font-family: monospace; font-weight: bold; font-size: 0.9rem; word-break: break-all; letter-spacing: 0.5px; }
+    .key-details { color: var(--text-secondary); font-size: 0.76rem; margin-top: 4px; line-height: 1.3; }
+    
+    .action-btns { display: flex; gap: 8px; margin-left: 10px; flex-shrink: 0; }
+    .btn-copy { background: rgba(48, 209, 88, 0.15); border: 1px solid rgba(48, 209, 88, 0.4); color: #30d158; padding: 7px 12px; border-radius: 8px; font-size: 0.72rem; cursor: pointer; font-weight: 700; transition: 0.2s; }
+    .btn-copy:active { background: rgba(48, 209, 88, 0.3); }
+    
+    .btn-delete { background: rgba(255, 59, 48, 0.15); border: 1px solid rgba(255, 59, 48, 0.4); color: #ff3b30; padding: 7px 12px; border-radius: 8px; font-size: 0.72rem; cursor: pointer; font-weight: 700; transition: 0.2s; }
+    .btn-delete:active { background: rgba(255, 59, 48, 0.3); }
+    
+    .key-list::-webkit-scrollbar { width: 4px; }
+    .key-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+    .auth-overlay { position: fixed; inset: 0; background: #07070d; z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 15px; background-image: radial-gradient(circle at center, rgba(10,132,255,0.05) 0%, transparent 70%); }
+    .auth-box { background: rgba(20, 20, 35, 0.6); border: 1.5px solid var(--glass-border); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 360px; box-shadow: var(--shadow-glass); text-align: center; }
+    .auth-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .auth-sub { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 22px; line-height: 1.4; }
+    .auth-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 1.05rem; outline: none; text-align: center; letter-spacing: 3px; font-family: monospace; margin-bottom: 18px; transition: 0.2s; }
+    .auth-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 15px rgba(10,132,255,0.3); }
+  </style>
+</head>
+<body>
+  <canvas id="dustCanvas"></canvas>
+
+  <div class="auth-overlay" id="authGate">
+    <div class="auth-box">
+      <div class="auth-title">FAROS SYSTEM CONTROL</div>
+      <div class="auth-sub">Vui lòng cung cấp mật khẩu mã khóa quyền để tiếp cận bảng quản lý Admin.</div>
+      <input type="password" id="authPasswordInput" class="auth-input" placeholder="••••••••" autocomplete="off">
+      <button class="btn-primary" id="btnVerifyAuth">XÁC MINH TRUY CẬP</button>
+    </div>
+  </div>
+
+  <div class="glass-panel" id="adminPanel">
+    <h2>PANEL ADMIN FAROS</h2>
+    
+    <div class="input-group">
+      <label>Tạo Key (Để trống sẽ Random theo HSD):</label>
+      <div style="display: flex; gap:10px;">
+        <input type="text" id="adminCustomKey" class="glass-input" placeholder="FAROS-1D-XXXXX..." style="font-family: monospace; letter-spacing: 0.5px;">
+        <button class="btn-primary" id="btnRandomKey" style="width: 65px; font-size: 1.1rem; padding: 0; display: flex; align-items: center; justify-content: center;">🎲</button>
+      </div>
+    </div>
+    
+    <div class="input-group" style="display: flex; gap:12px;">
+      <div style="flex:1.3;">
+        <label>Hạn Sử Dụng (HSD):</label>
+        <select id="adminDuration" class="glass-select" style="cursor: pointer;">
+          <option value="lifetime">Vĩnh viễn</option>
+          <option value="1">1 Ngày</option>
+          <option value="3">3 Ngày</option>
+          <option value="7">7 Ngày</option>
+          <option value="15">15 Ngày</option>
+          <option value="30">30 Ngày</option>
+        </select>
+      </div>
+      <div style="flex:0.7;">
+        <label>Số Máy:</label>
+        <input type="number" id="adminDevices" class="glass-input" value="1" min="1" style="text-align: center;">
+      </div>
+    </div>
+    
+    <button class="btn-primary" id="btnCreateKey" style="margin-top: 4px; background: linear-gradient(135deg, #0a84ff, #004094);">➕ TẠO KEY HỆ THỐNG</button>
+    
+    <div class="key-list" id="adminKeyList">Đang kết nối cơ sở dữ liệu...</div>
+    
+    <button class="btn-primary" style="margin-top:14px; background:transparent; border:1px solid var(--glass-border); color:var(--text-secondary); font-weight: 600;" onclick="window.location.href='nhapkeyv2.html'">🔙 Quay lại cổng chính</button>
+  </div>
+
+  <script>
+    const SECRET_PASSWORD = "faroswvdann_vip_ngvandanplus_crackcc3m";
+    let accessGranted = false;
+    let db = null;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
+      databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com"
+    };
+
+    const authGate = document.getElementById('authGate');
+    const authInput = document.getElementById('authPasswordInput');
+    const btnVerify = document.getElementById('btnVerifyAuth');
+
+    authInput.focus();
+
+    authInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') btnVerify.click();
+    });
+
+    btnVerify.addEventListener('click', () => {
+      const inputPass = authInput.value.trim();
+      if (inputPass === SECRET_PASSWORD) {
+        accessGranted = true;
+        authGate.style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        renderKeys();
+        initAdminActions();
+      } else {
+        alert("Mật khẩu mã khóa quyền không chính xác! Hãy thử lại.");
+        authInput.value = '';
+        authInput.focus();
+      }
+    });
+
+    // HIỆU ỨNG HẠT BỤI NỀN - ĐÃ ĐƯỢC TĂNG TỐC ĐỘ DI CHUYỂN
+    const dCanvas = document.getElementById('dustCanvas'); const dCtx = dCanvas.getContext('2d'); let particles = [];
+    function resizeDust() { dCanvas.width = window.innerWidth; dCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeDust); resizeDust();
+    
+    // Tạo hạt với xung tốc độ ngẫu nhiên lớn hơn (nhân với 2.0 thay vì 0.5)
+    for(let i=0; i<40; i++) particles.push({ 
+      x: Math.random() * dCanvas.width, 
+      y: Math.random() * dCanvas.height, 
+      r: Math.random() * 2 + 0.5, 
+      vx: (Math.random() - 0.5) * 2.0, 
+      vy: (Math.random() - 0.5) * 2.0, 
+      alpha: Math.random() * 0.5 + 0.1 
+    });
+    
+    function drawDust() { 
+      dCtx.clearRect(0,0, dCanvas.width, dCanvas.height); 
+      particles.forEach(p => { 
+        p.x += p.vx; 
+        p.y += p.vy; 
+        if(p.x < 0 || p.x > dCanvas.width) p.vx *= -1; 
+        if(p.y < 0 || p.y > dCanvas.height) p.vy *= -1; 
+        dCtx.beginPath(); 
+        dCtx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
+        dCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; 
+        dCtx.fill(); 
+      }); 
+      requestAnimationFrame(drawDust); 
+    } 
+    drawDust();
+
+    function makeRandomString(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+      return result;
+    }
+
+    function getKeyPrefix(dur) {
+      if (dur === 'lifetime') return 'FAROS-LT-';
+      return `FAROS-${dur}D-`;
+    }
+
+    function formatFullDate(timestamp) {
+      if (!timestamp) return 'Vĩnh viễn';
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Vĩnh viễn';
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      return `${hours}:${minutes} - ${day}/${month}/${date.getFullYear()}`;
+    }
+
+    function renderKeys() {
+      if(!accessGranted || !db) return;
+      db.ref('Keys_farosWvdann_secure_x367_369_36_67').on('value', (snap) => {
+        const list = document.getElementById('adminKeyList'); list.innerHTML = '';
+        const data = snap.val();
+        if(!data) { list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.85rem;">Chưa có key nào tồn tại trên máy chủ.</div>'; return; }
+        
+        const keyArray = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        keyArray.forEach(k => {
+          let dev = k.devices ? Object.keys(k.devices).length : 0;
+          let statusHtml = '';
+
+          if (k.durationDays === 'lifetime') {
+            statusHtml = '<span style="color: #0a84ff; font-weight:700;">Vĩnh viễn</span>';
+          } else if (!k.expire) {
+            statusHtml = `<span style="color: var(--warning); font-weight:600;">Chưa kích hoạt (${k.durationDays} Ngày)</span>`;
+          } else {
+            if (Date.now() > k.expire) {
+                statusHtml = `<span style="color: var(--danger); font-weight:600;">Đã Hết Hạn</span>`;
+            } else {
+                statusHtml = `<span style="color: var(--success); font-weight:600;">${formatFullDate(k.expire)}</span>`;
+            }
+          }
+
+          list.innerHTML += `
+            <div class="key-item">
+              <div class="key-info" style="flex:1; min-width: 0;">
+                <span>${k.code}</span>
+                <div class="key-details">${dev}/${k.limit} Máy sử dụng • HSD: ${statusHtml}</div>
+              </div>
+              <div class="action-btns">
+                <button class="btn-copy" onclick="copyKey('${k.code}')">COPY</button>
+                <button class="btn-delete" onclick="deleteKey('${k.code}')">XÓA</button>
+              </div>
+            </div>`;
+        });
+      });
+    }
+
+    function initAdminActions() {
+      document.getElementById('btnRandomKey').addEventListener('click', () => {
+        const dur = document.getElementById('adminDuration').value;
+        document.getElementById('adminCustomKey').value = getKeyPrefix(dur) + makeRandomString(5);
+      });
+
+      document.getElementById('btnCreateKey').addEventListener('click', () => {
+        let val = document.getElementById('adminCustomKey').value.trim();
+        const dur = document.getElementById('adminDuration').value;
+        const limit = parseInt(document.getElementById('adminDevices').value) || 1;
+
+        if(!val) {
+          val = getKeyPrefix(dur) + makeRandomString(5);
+        }
+
+        let durationDays = dur === 'lifetime' ? 'lifetime' : parseInt(dur);
+        let nowTimestamp = Date.now();
+        
+        db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + val).set({ 
+          code: val, 
+          limit: limit, 
+          durationDays: durationDays, 
+          expire: null,               
+          devices: {},
+          createdAt: nowTimestamp 
+        }).then(() => {
+          document.getElementById('adminCustomKey').value = '';
+        }).catch((error) => {
+          alert('Lỗi khởi tạo key mới: ' + error.message);
+        });
+      });
+    }
+
+    window.copyKey = (code) => {
+      navigator.clipboard.writeText(code).then(() => { alert('Đã sao chép thành công key: ' + code); })
+      .catch(() => { const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); alert('Đã sao chép thành công key: ' + code); });
+    };
+
+    window.deleteKey = (code) => { 
+        if(!accessGranted || !db) return;
+        if(confirm('Bạn thực sự muốn thu hồi / xóa bỏ key này khỏi máy chủ: ' + code + '?')) {
+            db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + code).remove(); 
+        }
+    };
+  </script>
+</body>
+</html>
