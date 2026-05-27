@@ -930,7 +930,7 @@
     </div>
 </div>
 
-<script>
+<<script>
 /* ════════════════════════════════════════════════
    FIREBASE CONFIG & INIT
 ════════════════════════════════════════════════ */
@@ -1061,7 +1061,7 @@ function updateDashboardUI(keyVal, keyData) {
     else {
         // VĨNH VIỄN
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
-        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · 1 ngày ; 3 ngày ; ..... ; vĩnh viễn · Anti-Ban';
+        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · VIP vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
@@ -1105,7 +1105,7 @@ function updateDashboardUI(keyVal, keyData) {
 }
 
 /* ════════════════════════════════════════════════
-   LOGIN & LOGOUT LOGIC
+   LOGIN & LOGOUT LOGIC (FIXED LOCKOUT LOOP)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
     const savedKey = localStorage.getItem(LS_KEY);
@@ -1120,22 +1120,30 @@ async function checkAutoLogin() {
             updateDashboardUI(savedKey, keyData);
         } catch (e) {
             console.error("Lỗi parse data:", e);
-            window.location.href = 'nhapkey.html';
+            window.location.replace('nhapkey.html');
         }
     } else {
-        window.location.href = 'nhapkey.html';
+        window.location.replace('nhapkey.html');
     }
 }
 
-function doLogout(){
+function logout(){
+    // Dừng toàn bộ bộ đếm thời gian đang chạy ngầm để giải phóng luồng
+    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
+    if (window.clockInterval) clearInterval(window.clockInterval);
+    
+    // Xóa sạch dữ liệu trong bộ nhớ tạm
     localStorage.removeItem(LS_KEY);
     localStorage.removeItem(LS_KEYDATA);
     localStorage.removeItem('faros_login_timestamp');
-    showToast('Đã đăng xuất!','fa-right-from-bracket','#f97316');
+    
+    showToast('Đã đăng xuất thành công!','fa-right-from-bracket','#f97316');
     showRipple();
+    
+    // Ép trình duyệt chuyển hướng thay thế lịch sử trang để tránh vòng lặp load trang cũ
     setTimeout(() => {
-        window.location.href = 'nhapkey.html';
-    }, 800);
+        window.location.replace('nhapkey.html');
+    }, 600);
 }
 
 /* ════════════════════════════════════════════════
@@ -1302,7 +1310,6 @@ const ALL_GUNS = [
     {name:'UMP',          cls:'gc-grn',   dmg:44,  rng:'40m',  spd:'★★★★★', rpm:750,  type:'SMG',     emoji:'🔫'},
     {name:'Desert Eagle', cls:'gc-ylw',   dmg:71,  rng:'35m',  spd:'★★★☆☆', rpm:300,  type:'Pistol',  emoji:'💥'},
     {name:'M1014',        cls:'gc-red',   dmg:80,  rng:'18m',  spd:'★★★☆☆', rpm:200,  type:'Shotgun', emoji:'💣'},
-    {name:'M1887',        cls:'gc-red',   dmg:90,  rng:'22m',  spd:'★★★☆☆', rpm:300,  type:'Shotgun', emoji:'💣'},
 ];
 
 function addLine(html,delay){
@@ -1334,7 +1341,6 @@ async function runModule(){
     btn.classList.add('running'); ic.className='fa-solid fa-stop'; lb.textContent='Dừng Module';
     tBox.classList.add('open'); tOut.innerHTML='';
 
-    // Quét dữ liệu phần cứng thời gian thực
     const hw = await getRealHardwareInfo();
     const randomTemp = Math.floor(Math.random() * 6) + 36; 
 
@@ -1346,7 +1352,7 @@ async function runModule(){
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : ${hw.ramTotal} · Available: ${hw.ramAvail}</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> GPU       : ${hw.gpu}</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Temp      : ${randomTemp}°C · Battery: ${hw.battery}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · TurboHead FAROS Verified</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · Firebase Verified</span>`,d); d+=I;
     addProg('p-init','Khởi tạo kernel module VIP...',d,d+180); d+=I*2.2;
     addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn"> ✓ Module VIP loaded — OK</span>`,d); d+=I;
 
