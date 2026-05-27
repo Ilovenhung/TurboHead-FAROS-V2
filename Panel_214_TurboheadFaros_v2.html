@@ -913,40 +913,6 @@
 </div> 
 <!-- KẾT THÚC DASHBOARD SCREEN -->
 
-<!-- SCRIPT BYPASS XÁC MINH -->
-<script>
-    (function() {
-        function bypass() {
-            const idsToHide = ['login-screen', 'splash-screen', 'welcome-overlay', 'check-overlay', 'blocked-overlay'];
-            idsToHide.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'none';
-                    el.classList.remove('active');
-                }
-            });
-
-            const dashboard = document.getElementById('dashboard');
-            if (dashboard) {
-                dashboard.style.display = 'block';
-                dashboard.classList.add('active');
-            }
-        }
-
-        window.doLogin = function() { return true; };
-        window.checkKeyStatus = function() { return true; };
-        window.validateUser = function() { return true; };
-        
-        window.isLoggedIn = true;
-        window.currentUserKey = "VIP-UNLOCKED";
-
-        const bypassInterval = setInterval(bypass, 100);
-        setTimeout(() => clearInterval(bypassInterval), 2000);
-        
-        console.log("Bypass Login Success - TurboHead FAROS V2");
-    })();
-</script>
-
 <!-- ACTIVATION MODAL -->
 <div class="modal-overlay" id="modal-overlay">
     <div class="modal-box" id="modal-box">
