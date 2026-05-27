@@ -966,39 +966,15 @@
 
 <script>
 /* ════════════════════════════════════════════════
-   FIREBASE CONFIG
+   FIREBASE CONFIG & INIT
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
     apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
     databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com",
 };
 
-/* ====== Thời gian thật ======== */
-function startRealTimeClock() {
-    const timerDisplay = document.getElementById('session-timer');
-    if (!timerDisplay) return;
-
-    if (window.clockInterval) clearInterval(window.clockInterval);
-
-    const updateTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-
-        // Dòng chuẩn không lỗi:
-        timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
-    };
-
-    updateTime(); // Chạy ngay lập tức để lấy thời gian thực lúc vừa load trang
-    window.clockInterval = setInterval(updateTime, 1000); // Lặp lại mỗi giây
-}
-
-
-/* ══ KHỞI TẠO FIREBASE ══ */
 let db = null;
 let firebaseReady = false;
-
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
@@ -1008,295 +984,12 @@ try {
 }
 
 /* ════════════════════════════════════════════════
-   DEVICE ID
+   SYSTEM HELPERS & UI EFFECTS
 ════════════════════════════════════════════════ */
-function getDeviceId() {
-    let did = localStorage.getItem('_vs3_device_id');
-    if (!did) {
-        const arr = new Uint8Array(16);
-        crypto.getRandomValues(arr);
-        did = Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
-        localStorage.setItem('_vs3_device_id', did);
-    }
-    return did;
-}
-const DEVICE_ID = getDeviceId();
+const TOTAL = 5; // Số lượng module hiện có
+const LS_KEY = 'faros_current_key';
+const LS_KEYDATA = 'faros_key_data';
 
-/* ════════════════════════════════════════════════
-   STORAGE KEYS
-════════════════════════════════════════════════ */
-const LS_KEY      = 'vipsuper3_saved_key';
-const LS_KEYDATA  = 'vipsuper3_key_data';
-const LS_HIDE_KEY = 'vipsuper3_hide_until';
-const LS_NOTIF_READ = 'vipsuper3_notif_read';
-
-/* ════════════════════════════════════════════════
-   FIREBASE STATUS
-════════════════════════════════════════════════ */
-function setFbStatus(ok) {
-    const dot = document.getElementById('fb-dot');
-    const txt = document.getElementById('fb-status-text');
-    if (!dot) return;
-    if (ok) {
-        dot.classList.add('connected');
-        txt.textContent = 'Server: Đã kết nối';
-    } else {
-        dot.classList.remove('connected');
-        txt.textContent = 'Server: Chưa kết nối';
-    }
-}
-
-if (firebaseReady && db) {
-    db.ref('.info/connected').on('value', snap => {
-        setFbStatus(snap.val() === true);
-    });
-} else {
-    setFbStatus(false);
-}
-
-/* ════════════════════════════════════════════════
-   LOAD WELCOME MODAL LINK TỪ FIREBASE — REAL-TIME
-════════════════════════════════════════════════ */
-function loadModalLink() {
-    if (!firebaseReady || !db) return;
-    db.ref('settings/modalLink').on('value', snap => {
-        const data = snap.val() || {};
-        const inp = document.getElementById('key-link-input');
-        if (inp && data.url) inp.value = data.url;
-        const badge = document.getElementById('wm-badge-text');
-        if (badge && data.badge) badge.textContent = data.badge;
-        const hl = document.getElementById('wm-headline');
-        if (hl && data.title) hl.innerHTML = data.title;
-        const desc = document.getElementById('wm-desc');
-        if (desc && data.desc) desc.innerHTML = data.desc;
-    });
-}
-loadModalLink();
-
-/* ════════════════════════════════════════════════
-   NOTIFICATIONS — LOAD & DISPLAY
-════════════════════════════════════════════════ */
-let allNotifications = [];
-let readNotifIds = JSON.parse(localStorage.getItem(LS_NOTIF_READ) || '[]');
-
-function loadNotifications() {
-    if (!firebaseReady || !db) return;
-    db.ref('notifications').orderByChild('createdAt').on('value', snap => {
-        const data = snap.val() || {};
-        allNotifications = Object.entries(data)
-            .map(([id, v]) => ({ id, ...v }))
-            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        updateNotifBadge();
-    });
-}
-loadNotifications();
-
-function getUnreadCount() {
-    return allNotifications.filter(n => !readNotifIds.includes(n.id)).length;
-}
-
-function updateNotifBadge() {
-    const badge = document.getElementById('notif-badge');
-    const count = getUnreadCount();
-    if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.classList.add('show', 'pulse-red');
-    } else {
-        badge.classList.remove('show', 'pulse-red');
-    }
-}
-
-function openNotifPanel() {
-    const overlay = document.getElementById('notif-overlay');
-    overlay.classList.add('show');
-    renderNotifList();
-    showRipple();
-}
-
-function closeNotifPanel(e) {
-    if (e && e.target !== document.getElementById('notif-overlay')) return;
-    document.getElementById('notif-overlay').classList.remove('show');
-}
-
-function closeNotifPanelBtn() {
-    document.getElementById('notif-overlay').classList.remove('show');
-}
-
-function markAllRead() {
-    allNotifications.forEach(n => {
-        if (!readNotifIds.includes(n.id)) readNotifIds.push(n.id);
-    });
-    localStorage.setItem(LS_NOTIF_READ, JSON.stringify(readNotifIds));
-    updateNotifBadge();
-    renderNotifList();
-    showToast('Đã đọc tất cả thông báo', 'fa-check-circle', '#10b981');
-}
-
-function markOneRead(id) {
-    if (!readNotifIds.includes(id)) {
-        readNotifIds.push(id);
-        localStorage.setItem(LS_NOTIF_READ, JSON.stringify(readNotifIds));
-        updateNotifBadge();
-        renderNotifList();
-    }
-}
-
-function getNotifIconClass(type) {
-    const map = {
-        info:    { cls:'ni-type-info',    icon:'fa-circle-info' },
-        warn:    { cls:'ni-type-warn',    icon:'fa-triangle-exclamation' },
-        success: { cls:'ni-type-success', icon:'fa-circle-check' },
-        danger:  { cls:'ni-type-danger',  icon:'fa-circle-xmark' },
-    };
-    return map[type] || map.info;
-}
-
-function formatNotifTime(ts) {
-    if (!ts) return '';
-    const diff = Date.now() - ts;
-    if (diff < 60000) return 'Vừa xong';
-    if (diff < 3600000) return Math.floor(diff/60000) + ' phút trước';
-    if (diff < 86400000) return Math.floor(diff/3600000) + ' giờ trước';
-    const d = new Date(ts);
-    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-}
-
-function renderNotifList() {
-    const wrap = document.getElementById('notif-list-wrap');
-    const empty = document.getElementById('notif-empty');
-    const countChip = document.getElementById('notif-count-chip');
-    const subText = document.getElementById('notif-sub-text');
-    const btnReadAll = document.getElementById('btn-read-all');
-    const unread = getUnreadCount();
-
-    if (allNotifications.length === 0) {
-        empty.style.display = '';
-        countChip.style.display = 'none';
-        subText.textContent = 'Không có thông báo mới';
-        btnReadAll.style.display = 'none';
-        wrap.innerHTML = '';
-        wrap.appendChild(empty);
-        return;
-    }
-
-    empty.style.display = 'none';
-    countChip.style.display = unread > 0 ? '' : 'none';
-    countChip.textContent = unread + ' mới';
-    subText.textContent = unread > 0 ? `${unread} thông báo chưa đọc` : 'Tất cả đã đọc';
-    btnReadAll.style.display = unread > 0 ? '' : 'none';
-
-    const items = allNotifications.map(n => {
-        const isUnread = !readNotifIds.includes(n.id);
-        const ic = getNotifIconClass(n.type || 'info');
-        return `
-        <div class="notif-item ${isUnread ? 'unread' : ''}" onclick="markOneRead('${n.id}')">
-            <div class="notif-item-icon ${ic.cls}">
-                <i class="fa-solid ${ic.icon}"></i>
-            </div>
-            <div class="notif-item-body">
-                <div class="notif-item-title">${n.title || 'Thông báo'}</div>
-                <div class="notif-item-msg">${n.message || ''}</div>
-                <div class="notif-item-time">
-                    <i class="fa-regular fa-clock"></i>
-                    ${formatNotifTime(n.createdAt)}
-                </div>
-            </div>
-            <div class="notif-unread-dot"></div>
-        </div>`;
-    }).join('');
-
-    wrap.innerHTML = items;
-}
-
-/* ════════════════════════════════════════════════
-   PARTICLES
-════════════════════════════════════════════════ */
-(function(){
-    const c = document.getElementById('particles-canvas');
-    const ctx = c.getContext('2d');
-    let W, H, pts = [];
-    function resize(){ W = c.width = innerWidth; H = c.height = innerHeight; }
-    resize(); addEventListener('resize', resize);
-    const COLS = [
-        [37,99,235], [6,182,212], [139,92,246], [16,185,129], [236,72,153]
-    ];
-    function mkPt(){
-        const col = COLS[Math.floor(Math.random() * COLS.length)];
-        return { x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.6+0.3, dx:(Math.random()-.5)*.4, dy:(Math.random()-.5)*.4, a:Math.random()*.45+.08, col };
-    }
-    for(let i=0;i<90;i++) pts.push(mkPt());
-    function draw(){
-        ctx.clearRect(0,0,W,H);
-        pts.forEach(p=>{
-            ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-            ctx.fillStyle=`rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.a})`; ctx.fill();
-            p.x+=p.dx; p.y+=p.dy;
-            if(p.x<0||p.x>W||p.y<0||p.y>H) Object.assign(p,mkPt());
-        });
-        requestAnimationFrame(draw);
-    }
-    draw();
-})();
-
-/* ════════════════════════════════════════════════
-   FLOATING HEXAGONS
-════════════════════════════════════════════════ */
-(function(){
-    const bg = document.getElementById('hex-bg');
-    for(let i=0;i<14;i++){
-        const h = document.createElement('div');
-        h.className = 'hex';
-        h.style.cssText = `left:${Math.random()*100}%;animation-duration:${Math.random()*22+18}s;animation-delay:${Math.random()*-30}s;transform:scale(${Math.random()*.8+.4})`;
-        bg.appendChild(h);
-    }
-})();
-
-/* ════════════════════════════════════════════════
-   PING RANDOMIZER
-════════════════════════════════════════════════ */
-setInterval(()=>{
-    const el = document.getElementById('ping-val');
-    if(el) el.textContent = Math.floor(Math.random()*16+7)+'ms';
-}, 3500);
-
-/* ════════════════════════════════════════════════
-   SESSION TIMER (BẢN CHUẨN ĐÃ SỬA CÚ PHÁP)
-════════════════════════════════════════════════ */
-function startRealTimeClock() {
-    const timerDisplay = document.getElementById('session-timer');
-    if (!timerDisplay) return;
-
-    // Tránh trùng lặp bộ đếm
-    if (window.clockInterval) clearInterval(window.clockInterval);
-
-    const updateTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        
-        // Đã sửa thành dấu ${} chuẩn để không bị hiện text lỗi
-        timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
-    };
-
-    updateTime(); // Chạy ngay lập tức để không bị delay 00:00 lúc đầu
-    window.clockInterval = setInterval(updateTime, 1000);
-}
-
-/* ════════════════════════════════════════════════
-   ACTIVE COUNT
-════════════════════════════════════════════════ */
-const TOTAL = 8;
-function updateCount(){
-    let n = 0;
-    for(let i=1;i<=TOTAL;i++){ const c=document.getElementById('card-'+i); if(c && c.classList.contains('on')) n++; }
-    const el = document.getElementById('active-count');
-    if(el) el.textContent = n+' / '+TOTAL;
-}
-
-/* ════════════════════════════════════════════════
-   TOAST
-════════════════════════════════════════════════ */
 function showToast(msg, icon='fa-circle-check', color='#60a5fa'){
     const w = document.getElementById('toast-wrap');
     const t = document.createElement('div');
@@ -1306,142 +999,51 @@ function showToast(msg, icon='fa-circle-check', color='#60a5fa'){
     setTimeout(()=>{ if(t.parentElement) t.remove(); }, 3200);
 }
 
-/* ════════════════════════════════════════════════
-   RIPPLE
-════════════════════════════════════════════════ */
 function showRipple(){
     const ov = document.getElementById('ripple-overlay');
-    ov.classList.add('show');
-    setTimeout(()=> ov.classList.remove('show'), 950);
-}
-
-/* ════════════════════════════════════════════════
-   WELCOME MODAL — COUNTDOWN + HIDE LOGIC
-════════════════════════════════════════════════ */
-let wmCountdown = 180;
-let wmTimerInterval = null;
-
-function startWMCountdown() {
-    wmCountdown = 180;
-    clearInterval(wmTimerInterval);
-    const el = document.getElementById('wm-countdown-text');
-    wmTimerInterval = setInterval(() => {
-        wmCountdown--;
-        if (el) {
-            const m = Math.floor(wmCountdown / 60);
-            const s = wmCountdown % 60;
-            el.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`;
-        }
-        if (wmCountdown <= 0) {
-            clearInterval(wmTimerInterval);
-            closeWelcome(false);
-        }
-    }, 1000);
-}
-
-(function(){
-    const h = localStorage.getItem(LS_HIDE_KEY);
-    if(h && Date.now() < parseInt(h)) {
-        const ov = document.getElementById('welcome-overlay');
-        if (ov) ov.style.display = 'none';
-        return;
-    }
-    startWMCountdown();
-})();
-
-function closeWelcome(forMin){
-    clearInterval(wmTimerInterval);
-    if(forMin){
-        localStorage.setItem(LS_HIDE_KEY, Date.now()+3*60*1000);
-        showToast('Đã đóng trong 3 phút','fa-clock','#94a3b8');
-    }
-    const ov = document.getElementById('welcome-overlay');
-    ov.classList.add('hiding');
-    setTimeout(()=>{ ov.style.display='none'; ov.classList.remove('hiding'); }, 420);
-}
-
-function copyLink(){
-    const inp = document.getElementById('key-link-input');
-    navigator.clipboard.writeText(inp.value).catch(()=>{ inp.select(); document.execCommand('copy'); });
-    const btn = document.getElementById('btn-copy-link');
-    const ic  = document.getElementById('copy-icon');
-    const lb  = document.getElementById('copy-label');
-    btn.classList.add('copied');
-    ic.className = 'fa-solid fa-check'; lb.textContent = 'ĐÃ COPY';
-    showToast('Đã sao chép link!','fa-copy','#6ee7b7');
-    setTimeout(()=>{ btn.classList.remove('copied'); ic.className='fa-solid fa-copy'; lb.textContent='COPY'; }, 2600);
-}
-
-/* ════════════════════════════════════════════════
-   EYE TOGGLE
-════════════════════════════════════════════════ */
-let eyeVis = false;
-function toggleEye(){
-    const inp = document.getElementById('key-input');
-    const ic  = document.getElementById('eye-icon');
-    const btn = document.getElementById('eye-btn');
-    eyeVis = !eyeVis;
-    inp.type = eyeVis ? 'text' : 'password';
-    ic.className = eyeVis ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
-    btn.classList.toggle('vis', eyeVis);
-}
-
-/* ════════════════════════════════════════════════
-   KEY STRENGTH INDICATOR
-════════════════════════════════════════════════ */
-function onKeyInput(inp){
-    const v = inp.value;
-    const ks = document.getElementById('key-strength');
-    const b1=document.getElementById('sb1'), b2=document.getElementById('sb2'), b3=document.getElementById('sb3');
-    const lbl=document.getElementById('ks-label');
-    if(!v.length){ ks.classList.remove('vis'); b1.className=b2.className=b3.className='ks-bar'; return; }
-    ks.classList.add('vis');
-    if(v.length<6){
-        b1.className='ks-bar l1'; b2.className='ks-bar'; b3.className='ks-bar';
-        lbl.textContent='Quá ngắn'; lbl.style.color='#ef4444';
-    } else if(v.length<15){
-        b1.className='ks-bar l2'; b2.className='ks-bar l2'; b3.className='ks-bar';
-        lbl.textContent='Có thể là key'; lbl.style.color='#f59e0b';
-    } else {
-        b1.className='ks-bar l3'; b2.className='ks-bar l3'; b3.className='ks-bar l3';
-        lbl.textContent='✓ Key hợp lệ'; lbl.style.color='#6ee7b7';
+    if(ov) {
+        ov.classList.add('show');
+        setTimeout(()=> ov.classList.remove('show'), 950);
     }
 }
 
+function updateCount(){
+    let n = 0;
+    for(let i=1; i<=TOTAL; i++){ 
+        const c = document.getElementById('card-'+i); 
+        if(c && c.classList.contains('on')) n++; 
+    }
+    const el = document.getElementById('active-count');
+    if(el) el.textContent = n + ' / ' + TOTAL;
+}
+
+setInterval(()=>{
+    const el = document.getElementById('ping-val');
+    if(el) el.textContent = Math.floor(Math.random()*16+7)+'ms';
+}, 3500);
+
 /* ════════════════════════════════════════════════
-   HELPER — Firebase path safe
+   SESSION TIMER (GIỜ HỆ THỐNG)
 ════════════════════════════════════════════════ */
-function keyToPath(k) {
-    return k.replace(/[.#$\[\]/]/g, '_');
+function startRealTimeClock() {
+    const timerDisplay = document.getElementById('session-timer');
+    if (!timerDisplay) return;
+    if (window.clockInterval) clearInterval(window.clockInterval);
+
+    const updateTime = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+    };
+    updateTime();
+    window.clockInterval = setInterval(updateTime, 1000);
 }
 
 /* ════════════════════════════════════════════════
-   FORMAT DATE / TIME LEFT
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN
 ════════════════════════════════════════════════ */
-function formatDate(ts) {
-    if (!ts) return 'Vĩnh viễn';
-    const d = new Date(ts);
-    return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-}
-
-function timeLeft(expiresAt) {
-    if (!expiresAt) return "Vĩnh viễn";
-    const diff = expiresAt - Date.now();
-    if (diff <= 0) return "Hết hạn";
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) return `Còn ${days} ngày ${hours} giờ`;
-    return `Còn ${hours} giờ`;
-}
-
-
-/* /* ════════════════════════════════════════════════
-   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN THỰC
-   ════════════════════════════════════════════════ */
-
-// Biến toàn cục để quản lý bộ đếm thời gian liên tục, tránh bị trùng lặp xung đột bộ nhớ
 let licenseTimerInterval = null;
 
 function updateDashboardUI(keyVal, keyData) {
@@ -1455,15 +1057,12 @@ function updateDashboardUI(keyVal, keyData) {
 
     if (!licenseDisplay) return;
 
-    // Làm sạch bộ đếm Interval cũ trước khi khởi chạy bộ đếm mới
     if (licenseTimerInterval) clearInterval(licenseTimerInterval);
 
-    // Chuyển mã Key về chữ hoa để quét ký tự nhận diện ngày chính xác
     const keyUpper = String(keyVal).toUpperCase();
     let expiresAt = null;
-    let keyTypeText = ""; // Biến lưu chữ hiển thị loại Key cho Banner
+    let keyTypeText = "";
 
-    // Lấy mốc thời gian đăng nhập thực tế của phiên này từ LocalStorage
     let loginTime = localStorage.getItem('faros_login_timestamp');
     if (!loginTime) {
         loginTime = Date.now();
@@ -1472,49 +1071,43 @@ function updateDashboardUI(keyVal, keyData) {
         loginTime = Number(loginTime);
     }
 
-    // ==================== BÓC TÁCH THỜI HẠN THEO MÃ KEY ====================
+    // BÓC TÁCH MÃ KEY
     if (keyUpper.includes('-1D-')) {
-        // Key 1 Ngày
         expiresAt = loginTime + (1 * 24 * 60 * 60 * 1000);
         keyTypeText = "1 Ngày";
     } 
     else if (keyUpper.includes('-3D-')) {
-        // Key 3 Ngày
         expiresAt = loginTime + (3 * 24 * 60 * 60 * 1000);
         keyTypeText = "3 Ngày";
     }
     else if (keyUpper.includes('-7D-')) {
-        // Key 7 Ngày
         expiresAt = loginTime + (7 * 24 * 60 * 60 * 1000);
         keyTypeText = "7 Ngày";
     } 
     else if (keyUpper.includes('-15D-')) {
-        // Key 15 Ngày
         expiresAt = loginTime + (15 * 24 * 60 * 60 * 1000);
         keyTypeText = "15 Ngày";
     }
     else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) {
-        // Key 30 Ngày
         expiresAt = loginTime + (30 * 24 * 60 * 60 * 1000);
         keyTypeText = "30 Ngày";
     }
     else {
-        // Các trường hợp Key còn lại (Không chứa ký tự ngày ở trên) -> Coi như Vĩnh viễn
-        licenseDisplay.innerHTML = '<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>';
-        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
-        
+        // VĨNH VIỄN
+        licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
+        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · 1 ngày ; 3 ngày ; ..... ; vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // ==================== CHẠY BỘ ĐẾM NGƯỢC THỜI GIAN THỰC ====================
+    // ĐẾM LÙI
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
             if (diff <= 0) {
-                licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn</span>';
-                if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn sử dụng!';
-                clearInterval(licenseTimerInterval); // Khóa timer tránh lag máy
+                licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn</span>`;
+                if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn!';
+                clearInterval(licenseTimerInterval);
                 return;
             }
 
@@ -1539,183 +1132,77 @@ function updateDashboardUI(keyVal, keyData) {
         renderCountdown();
         licenseTimerInterval = setInterval(renderCountdown, 1000);
     } else {
-        // Trường hợp loginTime bị lệch hoặc key tính toán xong đã hết hạn
-        licenseDisplay.innerHTML = '<span style="color:#ff453a;"><i class="fa-solid fa-circle-exclamation"></i> Hết hạn / Không xác định</span>';
+        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Không xác định</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Trạng thái key không xác định';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
     }
 }
 
+/* ════════════════════════════════════════════════
+   LOGIN & LOGOUT LOGIC
+════════════════════════════════════════════════ */
 async function checkAutoLogin() {
-    const savedKey = localStorage.getItem('faros_current_key');
-    const savedData = localStorage.getItem('faros_key_data');
+    const savedKey = localStorage.getItem(LS_KEY);
+    const savedData = localStorage.getItem(LS_KEYDATA);
 
     if (savedKey && savedData) {
         try {
             const keyData = JSON.parse(savedData);
-            
-            // Đồng bộ định dạng tên biến truyền từ file đăng nhập
-            if (keyData && !keyData.expiresAt && keyData.expire) {
-                keyData.expiresAt = keyData.expire;
-            }
-
-            // Đồng bộ ghi nhận mốc thời gian bắt đầu phiên đăng nhập tự động
             if (!localStorage.getItem('faros_login_timestamp')) {
                 localStorage.setItem('faros_login_timestamp', Date.now());
             }
-            
-            // Kích hoạt đổ dữ liệu lên đồng hồ đếm giây hệ thống
             updateDashboardUI(savedKey, keyData);
-            
-            showToast('Đăng nhập tự động thành công!', 'fa-shield-check', '#10b981');
         } catch (e) {
-            console.error("Lỗi giải mã cấu trúc key đăng nhập:", e);
+            console.error("Lỗi parse data:", e);
             window.location.href = 'nhapkey.html';
         }
     } else {
-        // Không tìm thấy phiên đăng nhập cũ, sút thẳng ra ngoài
         window.location.href = 'nhapkey.html';
     }
 }
 
-/* ════════════════════════════════════════════════
-   GIÁM SÁT KEY REAL-TIME
-════════════════════════════════════════════════ */
-let keyWatcherRef = null;
-
-function startKeyWatcher(keyVal) {
-    if (!firebaseReady || !db) return;
-    stopKeyWatcher();
-    const path = keyToPath(keyVal);
-    keyWatcherRef = db.ref('keys/' + path);
-    keyWatcherRef.on('value', snap => {
-        if (!snap.exists()) {
-            stopKeyWatcher();
-            localStorage.removeItem(LS_KEY);
-            localStorage.removeItem(LS_KEYDATA);
-            showBlockedOverlay('Key đã bị xóa khỏi hệ thống!');
-            return;
-        }
-        const data = snap.val();
-        if (data.active === false) {
-            stopKeyWatcher();
-            showBlockedOverlay('Key của bạn đã bị vô hiệu hóa bởi admin!');
-            return;
-        }
-        if (data.expiresAt && Date.now() > data.expiresAt) {
-            stopKeyWatcher();
-            showBlockedOverlay(`Key đã hết hạn lúc ${formatDate(data.expiresAt)}`);
-        }
-    });
-}
-
-function stopKeyWatcher() {
-    if (keyWatcherRef) {
-        keyWatcherRef.off('value');
-        keyWatcherRef = null;
-    }
-}
-
-
-/* ════════════════════════════════════════════════
-   AUTO LOGIN
-════════════════════════════════════════════════ */
-async function checkAutoLogin() {
-    // 1. Lấy dữ liệu key đã được file nhapkey.html đóng gói lưu dưới máy khách
-    const savedKey = localStorage.getItem('faros_current_key');
-    const savedData = localStorage.getItem('faros_key_data');
-
-    // 2. Nếu có dữ liệu key hợp lệ, tiến hành phân tách và đổ lên giao diện
-    if (savedKey && savedData) {
-        try {
-            const keyData = JSON.parse(savedData);
-            
-            // Gọi hàm xử lý giao diện mà mình đã bổ sung hoàn chỉnh ở câu trước
-            updateDashboardUI(savedKey, keyData);
-            
-        } catch (e) {
-            console.error("Lỗi phân tách dữ liệu key:", e);
-            // Nếu dữ liệu lỗi, bắt quay lại trang đăng nhập
-            window.location.href = 'nhapkey.html';
-        }
-    } else {
-        // 3. Nếu chưa đăng nhập (không có key lưu trữ), đá người dùng về trang nhapkey.html
-        window.location.href = 'nhapkey.html';
-    }
-}
-
-
-/* ════════════════════════════════════════════════
-   LOGOUT
-════════════════════════════════════════════════ */
 function doLogout(){
     localStorage.removeItem(LS_KEY);
     localStorage.removeItem(LS_KEYDATA);
-    stopKeyWatcher();
-    if(sessionTid) clearInterval(sessionTid);
-    document.getElementById('blocked-overlay').classList.remove('show');
+    localStorage.removeItem('faros_login_timestamp');
     showToast('Đã đăng xuất!','fa-right-from-bracket','#f97316');
     showRipple();
-    setTimeout(()=>{
-        document.getElementById('dashboard').classList.remove('active');
-        document.getElementById('login-screen').classList.add('active');
-        document.getElementById('key-input').value='';
-        document.getElementById('key-strength').classList.remove('vis');
-        const st = document.getElementById('session-timer');
-        if(st) st.textContent='00:00';
-        for(let i=1;i<=TOTAL;i++){
-            const c=document.getElementById('card-'+i), p=document.getElementById('pill-'+i);
-            if(c){ c.classList.remove('on'); const cb=c.querySelector('input[type=checkbox]'); if(cb) cb.checked=false; }
-            if(p) p.textContent='OFF';
-        }
-        updateCount();
-        stopModule();
-    }, 420);
+    setTimeout(() => {
+        window.location.href = 'nhapkey.html';
+    }, 800);
 }
 
 /* ════════════════════════════════════════════════
-   QUICK ACTIONS
+   QUICK ACTIONS & MODULE TOGGLES
 ════════════════════════════════════════════════ */
 function quickAction(type) {
-    if (typeof showRipple === 'function') showRipple();
-    
-    // Giả sử biến TOTAL là số lượng các thẻ card/module bạn có trong panel
-    const totalModules = typeof TOTAL !== 'undefined' ? TOTAL : 10; 
-
+    showRipple();
     if (type === 'all-on') {
-        // Bật tất cả
-        for (let i = 1; i <= totalModules; i++) {
+        for (let i = 1; i <= TOTAL; i++) {
             const card = document.getElementById('card-' + i);
             const pill = document.getElementById('pill-' + i);
             const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
-            
             if (card) card.classList.add('on');
             if (pill) pill.textContent = 'ON';
             if (checkbox) checkbox.checked = true;
         }
-        if (typeof updateCount === 'function') updateCount();
-        if (typeof showToast === 'function') showToast('Đã bật tất cả module!', 'fa-power-off', '#60a5fa');
+        updateCount();
+        showToast('Đã bật tất cả module!', 'fa-power-off', '#60a5fa');
     } 
     else if (type === 'all-off') {
-        // Tắt tất cả
-        for (let i = 1; i <= totalModules; i++) {
+        for (let i = 1; i <= TOTAL; i++) {
             const card = document.getElementById('card-' + i);
             const pill = document.getElementById('pill-' + i);
             const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
-            
             if (card) card.classList.remove('on');
             if (pill) pill.textContent = 'OFF';
             if (checkbox) checkbox.checked = false;
         }
-        if (typeof updateCount === 'function') updateCount();
-        if (typeof showToast === 'function') showToast('Đã tắt tất cả module!', 'fa-circle-xmark', '#ef4444');
+        updateCount();
+        showToast('Đã tắt tất cả module!', 'fa-circle-xmark', '#ef4444');
     }
 }
 
-
-/* ════════════════════════════════════════════════
-   CARD TOGGLE + MODAL
-════════════════════════════════════════════════ */
 let mTid = null;
 function toggleCard(cb, cardId, name, iconClass){
     const card = document.getElementById(cardId);
@@ -1780,7 +1267,7 @@ function showDeactModal(name, iconClass, done){
 }
 
 /* ════════════════════════════════════════════════
-   MODULE RUNNER
+   MODULE RUNNER TERMINAL
 ════════════════════════════════════════════════ */
 let modRunning = false, modTids = [];
 function clearMT(){ modTids.forEach(t=>clearTimeout(t)); modTids=[]; }
@@ -1788,7 +1275,7 @@ function mt(fn,ms){ const id=setTimeout(fn,ms); modTids.push(id); }
 
 const ALL_GUNS = [
     {name:'MP40',         cls:'gc-blue',  dmg:48,  rng:'45m',  spd:'★★★★★', rpm:857,  type:'SMG',     emoji:'🔫'},
-    {name:'UMP',        cls:'gc-grn',   dmg:44,  rng:'40m',  spd:'★★★★★', rpm:750,  type:'SMG',     emoji:'🔫'},
+    {name:'UMP',          cls:'gc-grn',   dmg:44,  rng:'40m',  spd:'★★★★★', rpm:750,  type:'SMG',     emoji:'🔫'},
     {name:'Desert Eagle', cls:'gc-ylw',   dmg:71,  rng:'35m',  spd:'★★★☆☆', rpm:300,  type:'Pistol',  emoji:'💥'},
     {name:'M1014',        cls:'gc-red',   dmg:80,  rng:'18m',  spd:'★★★☆☆', rpm:200,  type:'Shotgun', emoji:'💣'},
 ];
@@ -1811,15 +1298,6 @@ function addProg(id,label,delay,fillDelay){
     mt(()=>{ const b=document.getElementById(id); if(b) b.style.width='100%'; },fillDelay);
 }
 
-function addGuns(guns,delay){
-    mt(()=>{
-        const o=document.getElementById('terminal-output');
-        const r=document.createElement('div'); r.className='gun-row';
-        guns.forEach(g=>{ r.innerHTML+=`<span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span>`; });
-        o.appendChild(r); o.scrollTop=o.scrollHeight;
-    },delay);
-}
-
 function runModule(){
     if(modRunning){ stopModule(); return; }
     modRunning=true;
@@ -1832,7 +1310,6 @@ function runModule(){
     tBox.classList.add('open'); tOut.innerHTML='';
 
     let d=0; const I=210;
-
     addLine(`<span class="tc-pfx">$</span><span class="tc-blue"> TurboHead FAROS</span> <span class="tc-dim">--inject --vip --build=2026</span>`,d); d+=I;
     addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[BOOT]</span> <span class="tc-cyan"> Khởi động TurboHead FAROS v2.0...</span>`,d); d+=I;
@@ -1866,17 +1343,19 @@ function runModule(){
     addLine(`<span class="tc-pfx">$</span><span class="tc-dim"> _</span><span class="blink-cur"></span>`,d); d+=I;
 
     mt(()=>{
-        modRunning=false;
+        modRunning = false;
         btn.classList.remove('running');
-        ic.className='fa-solid fa-rotate-right'; lb.textContent='Chạy Lại';
-        showRipple();-
+        ic.className = 'fa-solid fa-rotate-right'; 
+        lb.textContent = 'Chạy Lại';
+        showRipple();
         showToast('Module TurboHead V2 hoàn thành! '+ALL_GUNS.length+' vũ khí patched','fa-terminal','#67e8f9');
     },d);
 }
 
-function stopModule(){
-    clearMT(); modRunning=false;
-    const btn=document.getElementById('btn-run');
+function stopModule() {
+    clearMT(); 
+    modRunning = false;
+    const btn = document.getElementById('btn-run');
     if(!btn) return;
     btn.classList.remove('running');
     document.getElementById('run-icon').className='fa-solid fa-play';
@@ -1888,27 +1367,46 @@ function stopModule(){
     o.appendChild(el); o.scrollTop=o.scrollHeight;
     showToast('Module đã dừng','fa-circle-stop','#ef4444');
 }
+
 /* ════════════════════════════════════════════════
+   HỆ THỐNG BẢO MẬT FAROS - ANTI-COPY & ANTI-F12
+════════════════════════════════════════════════ */
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'F12') {
+        event.preventDefault(); return false;
+    }
+    if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) {
+        event.preventDefault(); return false;
+    }
+    if (event.ctrlKey && (event.key === 'u' || event.key === 's' || event.key === 'c' || event.key === 'U' || event.key === 'S' || event.key === 'C')) {
+        event.preventDefault(); return false;
+    }
+});
+
+const farosStyles = document.body.style;
+farosStyles.webkitUserSelect = "none";
+farosStyles.mozUserSelect = "none";
+farosStyles.msUserSelect = "none";
+farosStyles.userSelect = "none";
+farosStyles.webkitTouchCallout = "none";
+
+setInterval(() => {
+    console.clear();
+}, 1000);
+
+/* /════════════════════════════════════════════════
    KHỞI ĐỘNG APP
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
-    // Cho đồng hồ chạy NGAY LẬP TỨC khi vừa load trang, không đợi chờ gì cả
     startRealTimeClock(); 
 
-    // Sau đó mới xử lý Firebase và Đăng nhập tự động sau
     await new Promise(res => setTimeout(res, firebaseReady ? 900 : 1400));
     try {
         await checkAutoLogin();
     } catch(e) {
-        console.log("Chưa đăng nhập hoặc lỗi auto login", e);
-    }
-    
-    // Gọi các hàm hiệu ứng ma trận, thông số sau
-    resizeCanvas();
-    if(typeof drawMatrix === 'function') setInterval(drawMatrix, 45);
-    if(typeof updateStats === 'function') {
-        setInterval(updateStats, 2000);
-        updateStats();
+        console.log("Chưa đăng nhập hoặc lỗi auto login");
     }
 });
 </script>
