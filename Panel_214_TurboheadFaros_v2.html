@@ -930,7 +930,7 @@
     </div>
 </div>
 
-<script>
+<<script>
 /* ════════════════════════════════════════════════
    FIREBASE CONFIG & INIT
 ════════════════════════════════════════════════ */
@@ -1432,32 +1432,16 @@ setInterval(() => {
 }, 1000);
 
 /* ════════════════════════════════════════════════
-   KHỞI ĐỘNG APP - ĐÃ FIX LỖI TREO
+   KHỞI ĐỘNG APP
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
-    // 1. Chạy đồng hồ ngay lập tức
     startRealTimeClock(); 
 
-    // 2. Tự giải cứu: Nếu bị treo quá 3 giây, ép màn hình login hiện ra để nhập lại
-    const safetyTimer = setTimeout(() => {
-        console.warn("Hệ thống bị treo, ép hiện login...");
-        const loginScreen = document.getElementById('login-screen');
-        if (loginScreen) {
-            loginScreen.style.display = 'flex';
-            loginScreen.classList.add('active');
-        }
-        const dashboard = document.getElementById('dashboard');
-        if (dashboard) dashboard.style.display = 'none';
-    }, 3000);
-
-    // 3. Xử lý đăng nhập
-    await new Promise(res => setTimeout(res, firebaseReady ? 500 : 1000));
+    await new Promise(res => setTimeout(res, firebaseReady ? 900 : 1400));
     try {
         await checkAutoLogin();
-        clearTimeout(safetyTimer); // Nếu đăng nhập thành công thì tắt timer giải cứu
     } catch(e) {
-        console.log("Lỗi auto login, cần nhập lại key", e);
-        clearTimeout(safetyTimer);
+        console.log("Chưa đăng nhập hoặc lỗi auto login");
     }
 });
 </script>
