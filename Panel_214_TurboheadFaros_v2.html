@@ -1336,6 +1336,7 @@ const ALL_GUNS = [
     {name:'UMP',          cls:'gc-grn',   dmg:44,  rng:'40m',  spd:'★★★★★', rpm:750,  type:'SMG',     emoji:'🔫'},
     {name:'Desert Eagle', cls:'gc-ylw',   dmg:71,  rng:'35m',  spd:'★★★☆☆', rpm:300,  type:'Pistol',  emoji:'💥'},
     {name:'M1014',        cls:'gc-red',   dmg:80,  rng:'18m',  spd:'★★★☆☆', rpm:200,  type:'Shotgun', emoji:'💣'},
+    {name:'M1887',        cls:'gc-red',   dmg:90,  rng:'22m',  spd:'★★★☆☆', rpm:300,  type:'Shotgun', emoji:'💣'},
 ];
 
 function addLine(html,delay){
@@ -1379,7 +1380,7 @@ async function runModule(){
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : ${hw.ramTotal} · Available: ${hw.ramAvail}</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> GPU       : ${hw.gpu}</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Temp      : ${randomTemp}°C · Battery: ${hw.battery}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · Firebase Verified</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · TurboHead FAROS Verified</span>`,d); d+=I;
     addProg('p-init','Khởi tạo kernel module VIP...',d,d+180); d+=I*2.2;
     addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn"> ✓ Module VIP loaded — OK</span>`,d); d+=I;
 
