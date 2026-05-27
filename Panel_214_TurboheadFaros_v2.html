@@ -905,9 +905,10 @@
         </div>
     </div>
 
-    <button class="logout-btn" onclick="location.reload()">
-        <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
-    </button>
+    <button onclick="logout()" class="...">
+    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+</button>
+
     <div class="version-tag">ZALO : 0389148483</div>
 
 </div> 
@@ -1127,24 +1128,22 @@ async function checkAutoLogin() {
     }
 }
 
-function logout(){
-    // Dừng toàn bộ bộ đếm thời gian đang chạy ngầm để giải phóng luồng
-    if (licenseTimerInterval) clearInterval(licenseTimerInterval);
-    if (window.clockInterval) clearInterval(window.clockInterval);
-    
-    // Xóa sạch dữ liệu trong bộ nhớ tạm
-    localStorage.removeItem(LS_KEY);
-    localStorage.removeItem(LS_KEYDATA);
-    localStorage.removeItem('faros_login_timestamp');
-    
-    showToast('Đã đăng xuất thành công!','fa-right-from-bracket','#f97316');
-    showRipple();
-    
-    // Ép trình duyệt chuyển hướng thay thế lịch sử trang để tránh vòng lặp load trang cũ
+function logout() {
+    // 1. Xóa trạng thái đăng nhập và key đã lưu
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('loginKey');
+    localStorage.removeItem('savedLoginKey'); // Xóa key nếu bên nhapkey có lưu
+    localStorage.removeItem('rememberMe');
+
+    // 2. Hiện thông báo nhanh cho người dùng biết
+    showToast('Đang đăng xuất...', 'fa-sign-out-alt', '#3b82f6');
+
+    // 3. Chuyển hướng ngay lập tức về trang nhập key
     setTimeout(() => {
-        window.location.replace('nhapkey.html');
-    }, 600);
+        window.location.href = 'nhapkeyv2.html';
+    }, 800); // Đợi 0.8 giây để hiệu ứng toast kịp hiển thị, hoặc đổi thành 0 để chuyển luôn
 }
+
 
 /* ════════════════════════════════════════════════
    QUICK ACTIONS & MODULE TOGGLES
