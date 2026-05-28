@@ -886,66 +886,43 @@
 
     <!-- Module Runner -->
     <div class="sec-label"><i class="fa-solid fa-terminal"></i>Module Runner</div>
-    <div class="module-card">
-        <div class="module-header">
-            <div class="mod-left">
-                <div class="mod-icon"><i class="fa-solid fa-terminal"></i></div>
-                <div>
-                    <div class="mod-title">TurboHead FAROS</div>
-                    <div class="mod-sub">v2.0 · Build 2026 · VIP</div>
-                </div>
+<div class="module-card">
+    <div class="module-header">
+        <div class="mod-left">
+            <div class="mod-icon"><i class="fa-solid fa-terminal"></i></div>
+            <div>
+                <div class="mod-title">TurboHead FAROS</div>
+                <div class="mod-sub">v2.0 · Build 2026 · VIP</div>
             </div>
-            <button class="btn-run" id="btn-run" onclick="runModule()">
-                <i class="fa-solid fa-play" id="run-icon"></i>
-                <span id="run-label">Chạy Module</span>
-            </button>
         </div>
-        <div class="terminal-box" id="terminal-box">
-            <div class="terminal-inner" id="terminal-output"></div>
-        </div>
+        <button class="btn-run" id="btn-run" onclick="runModule()">
+            <i class="fa-solid fa-play" id="run-icon"></i>
+            <span id="run-label">Chạy Module</span>
+        </button>
     </div>
+    <div class="terminal-box" id="terminal-box">
+        <div class="terminal-inner" id="terminal-output"></div>
+    </div>
+</div>
 
-    <button class="logout-btn" onclick="location.reload()">
-        <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
-    </button>
-    <div class="version-tag">ZALO : 0389148483</div>
+<div id="game-launcher-box" style="display: none; justify-content: center; gap: 14px; margin-top: 20px; width: 100%; box-sizing: border-box; padding: 0 4px;">
+    <div class="game-card" onclick="launchGame(1)" style="cursor: pointer; padding: 16px 12px; background: linear-gradient(135deg, #111827, #1e1e2e); border: 1px solid #3b82f6; border-radius: 12px; text-align: center; flex: 1; box-shadow: 0 0 10px rgba(59, 130, 246, 0.25); transition: all 0.2s ease-in-out; -webkit-tap-highlight-color: transparent;" ontouchstart="this.style.transform='scale(0.97)'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.45)'" ontouchend="this.style.transform='scale(1)'; this.style.boxShadow='0 0 10px rgba(59, 130, 246, 0.25)'">
+        <i class="fa-solid fa-gamepad" style="color: #60a5fa; font-size: 26px; filter: drop-shadow(0 0 5px #3b82f6);"></i>
+        <div style="margin-top: 10px; font-weight: 700; color: #fff; font-size: 14px; letter-spacing: 0.5px; font-family: 'Rajdhani', 'Inter', sans-serif;">FREE FIRE THƯỜNG</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Bypass & Launch</div>
+    </div>
+    
+    <div class="game-card" onclick="launchGame(2)" style="cursor: pointer; padding: 16px 12px; background: linear-gradient(135deg, #111827, #1e1e2e); border: 1px solid #ef4444; border-radius: 12px; text-align: center; flex: 1; box-shadow: 0 0 10px rgba(239, 68, 68, 0.25); transition: all 0.2s ease-in-out; -webkit-tap-highlight-color: transparent;" ontouchstart="this.style.transform='scale(0.97)'; this.style.boxShadow='0 0 15px rgba(239, 68, 68, 0.45)'" ontouchend="this.style.transform='scale(1)'; this.style.boxShadow='0 0 10px rgba(239, 68, 68, 0.25)'">
+        <i class="fa-solid fa-bolt" style="color: #f87171; font-size: 26px; filter: drop-shadow(0 0 5px #ef4444);"></i>
+        <div style="margin-top: 10px; font-weight: 700; color: #fff; font-size: 14px; letter-spacing: 0.5px; font-family: 'Rajdhani', 'Inter', sans-serif;">FREE FIRE MAX</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Bypass & Launch</div>
+    </div>
+</div>
+
+<div class="version-tag" style="margin-top: 25px;">ZALO : 0389148483</div>
 
 </div> 
 <!-- KẾT THÚC DASHBOARD SCREEN -->
-
-<!-- SCRIPT BYPASS XÁC MINH -->
-<script>
-    (function() {
-        function bypass() {
-            const idsToHide = ['login-screen', 'splash-screen', 'welcome-overlay', 'check-overlay', 'blocked-overlay'];
-            idsToHide.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'none';
-                    el.classList.remove('active');
-                }
-            });
-
-            const dashboard = document.getElementById('dashboard');
-            if (dashboard) {
-                dashboard.style.display = 'block';
-                dashboard.classList.add('active');
-            }
-        }
-
-        window.doLogin = function() { return true; };
-        window.checkKeyStatus = function() { return true; };
-        window.validateUser = function() { return true; };
-        
-        window.isLoggedIn = true;
-        window.currentUserKey = "VIP-UNLOCKED";
-
-        const bypassInterval = setInterval(bypass, 100);
-        setTimeout(() => clearInterval(bypassInterval), 2000);
-        
-        console.log("Bypass Login Success - TurboHead FAROS V2");
-    })();
-</script>
 
 <!-- ACTIVATION MODAL -->
 <div class="modal-overlay" id="modal-overlay">
@@ -958,8 +935,9 @@
         <div class="step-list">
             <div class="step-item" id="ms1"><div class="step-dot"></div>Khởi tạo module...</div>
             <div class="step-item" id="ms2"><div class="step-dot"></div>Khởi động cấu hình...</div>
-            <div class="step-item" id="ms3"><div class="step-dot"></div>Tối ưu đồ hoạ game...</div>
-            <div class="step-item" id="ms4"><div class="step-dot"></div>Áp dụng hoàn tất!</div>
+            <div class="step-item" id="ms3"><div class="step-dot"></div>Kích hoạt chức năng...</div>
+            <div class="step-item" id="ms4"><div class="step-dot"></div>Tối ưu đồ hoạ game...</div>
+            <div class="step-item" id="ms5"><div class="step-dot"></div>Áp dụng hoàn tất!</div>
         </div>
     </div>
 </div>
@@ -970,7 +948,7 @@
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
     apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
-    databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com",
+    databaseURL: "https://shopfarossite-default-rtdb.firebaseiocom",
 };
 
 let db = null;
@@ -984,14 +962,93 @@ try {
 }
 
 /* ════════════════════════════════════════════════
+   HỆ THỐNG SÓNG ÂM TỰ ĐỘNG (WEB AUDIO API)
+════════════════════════════════════════════════ */
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playFarosSound(freq, type = 'sine', duration = 0.12) {
+    try {
+        initAudio();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        osc.type = type; 
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {
+        console.log("Audio Error:", e);
+    }
+}
+
+function playDeactivateSoundDelayed(delayMs) {
+    try {
+        initAudio();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const startTime = audioCtx.currentTime + (delayMs / 1000);
+
+        const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
+        osc1.type = 'sine'; osc1.frequency.setValueAtTime(600, startTime);
+        gain1.gain.setValueAtTime(0.2, startTime); gain1.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.start(startTime); osc1.stop(startTime + 0.1);
+
+        const startTime2 = startTime + 0.08;
+        const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+        osc2.type = 'sine'; osc2.frequency.setValueAtTime(450, startTime2);
+        gain2.gain.setValueAtTime(0.2, startTime2); gain2.gain.exponentialRampToValueAtTime(0.001, startTime2 + 0.1);
+        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+        osc2.start(startTime2); osc2.stop(startTime2 + 0.1);
+
+        const startTime3 = startTime + 0.16;
+        const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
+        osc3.type = 'sine'; osc3.frequency.setValueAtTime(300, startTime3);
+        gain3.gain.setValueAtTime(0.2, startTime3); gain3.gain.exponentialRampToValueAtTime(0.001, startTime3 + 0.15);
+        osc3.connect(gain3); gain3.connect(audioCtx.destination);
+        osc3.start(startTime3); osc3.stop(startTime3 + 0.15);
+    } catch(e) {
+        console.log("Audio error:", e);
+    }
+}
+
+function playLogClick() {
+    playFarosSound(1200, 'square', 0.03); 
+}
+
+function playSuccessMelody() {
+    playFarosSound(880, 'triangle', 0.1);
+    setTimeout(() => playFarosSound(1100, 'triangle', 0.1), 70);
+    setTimeout(() => playFarosSound(1400, 'triangle', 0.18), 150);
+}
+
+/* ════════════════════════════════════════════════
    SYSTEM HELPERS & UI EFFECTS
 ════════════════════════════════════════════════ */
-const TOTAL = 5; // Số lượng module hiện có
+const TOTAL = 5; 
 const LS_KEY = 'faros_current_key';
 const LS_KEYDATA = 'faros_key_data';
 
 function showToast(msg, icon='fa-circle-check', color='#60a5fa'){
     const w = document.getElementById('toast-wrap');
+    if(!w) return;
     const t = document.createElement('div');
     t.className = 'toast';
     t.innerHTML = `<i class="fa-solid ${icon}" style="color:${color}"></i>${msg}`;
@@ -1023,7 +1080,21 @@ setInterval(()=>{
 }, 3500);
 
 /* ════════════════════════════════════════════════
-   SESSION TIMER (GIỜ HỆ THỐNG)
+   FLOATING HEXAGONS
+════════════════════════════════════════════════ */
+(function(){
+    const bg = document.getElementById('hex-bg');
+    if(!bg) return;
+    for(let i=0;i<14;i++){
+        const h = document.createElement('div');
+        h.className = 'hex';
+        h.style.cssText = `left:${Math.random()*100}%;animation-duration:${Math.random()*22+18}s;animation-delay:${Math.random()*-30}s;transform:scale(${Math.random()*.8+.4})`;
+        bg.appendChild(h);
+    }
+})();
+
+/* ════════════════════════════════════════════════
+   SESSION TIMER
 ════════════════════════════════════════════════ */
 function startRealTimeClock() {
     const timerDisplay = document.getElementById('session-timer');
@@ -1042,27 +1113,22 @@ function startRealTimeClock() {
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN
 ════════════════════════════════════════════════ */
 let licenseTimerInterval = null;
 
 function updateDashboardUI(keyVal, keyData) {
     if (!keyData) return;
-
     const keyDisplay = document.getElementById('display-user-key');
     if (keyDisplay) keyDisplay.textContent = keyVal || "UNKNOWN";
-
     const licenseDisplay = document.getElementById('display-license-status');
     const bannerExpText = document.getElementById('banner-expiry-text');
-
     if (!licenseDisplay) return;
-
     if (licenseTimerInterval) clearInterval(licenseTimerInterval);
 
     const keyUpper = String(keyVal).toUpperCase();
     let expiresAt = null;
     let keyTypeText = "";
-
     let loginTime = localStorage.getItem('faros_login_timestamp');
     if (!loginTime) {
         loginTime = Date.now();
@@ -1071,36 +1137,18 @@ function updateDashboardUI(keyVal, keyData) {
         loginTime = Number(loginTime);
     }
 
-    // BÓC TÁCH MÃ KEY
-    if (keyUpper.includes('-1D-')) {
-        expiresAt = loginTime + (1 * 24 * 60 * 60 * 1000);
-        keyTypeText = "1 Ngày";
-    } 
-    else if (keyUpper.includes('-3D-')) {
-        expiresAt = loginTime + (3 * 24 * 60 * 60 * 1000);
-        keyTypeText = "3 Ngày";
-    }
-    else if (keyUpper.includes('-7D-')) {
-        expiresAt = loginTime + (7 * 24 * 60 * 60 * 1000);
-        keyTypeText = "7 Ngày";
-    } 
-    else if (keyUpper.includes('-15D-')) {
-        expiresAt = loginTime + (15 * 24 * 60 * 60 * 1000);
-        keyTypeText = "15 Ngày";
-    }
-    else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) {
-        expiresAt = loginTime + (30 * 24 * 60 * 60 * 1000);
-        keyTypeText = "30 Ngày";
-    }
+    if (keyUpper.includes('-1D-')) { expiresAt = loginTime + (86400000); keyTypeText = "1 Ngày"; } 
+    else if (keyUpper.includes('-3D-')) { expiresAt = loginTime + (3 * 86400000); keyTypeText = "3 Ngày"; }
+    else if (keyUpper.includes('-7D-')) { expiresAt = loginTime + (7 * 86400000); keyTypeText = "7 Ngày"; } 
+    else if (keyUpper.includes('-15D-')) { expiresAt = loginTime + (15 * 86400000); keyTypeText = "15 Ngày"; }
+    else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) { expiresAt = loginTime + (30 * 86400000); keyTypeText = "30 Ngày"; }
     else {
-        // VĨNH VIỄN
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
-        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · 1 ngày ; 3 ngày ; ..... ; vĩnh viễn · Anti-Ban';
+        if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // ĐẾM LÙI
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
@@ -1110,12 +1158,10 @@ function updateDashboardUI(keyVal, keyData) {
                 clearInterval(licenseTimerInterval);
                 return;
             }
-
             const days = Math.floor(diff / 86400000);
             const hours = Math.floor((diff % 86400000) / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000);
             const secs = Math.floor((diff % 60000) / 1000);
-
             const formatH = String(hours).padStart(2, '0');
             const formatM = String(mins).padStart(2, '0');
             const formatS = String(secs).padStart(2, '0');
@@ -1128,7 +1174,6 @@ function updateDashboardUI(keyVal, keyData) {
                 if (bannerExpText) bannerExpText.textContent = `Sắp hết hạn · ${formatH}:${formatM}`;
             }
         };
-
         renderCountdown();
         licenseTimerInterval = setInterval(renderCountdown, 1000);
     } else {
@@ -1139,7 +1184,7 @@ function updateDashboardUI(keyVal, keyData) {
 }
 
 /* ════════════════════════════════════════════════
-   LOGIN & LOGOUT LOGIC
+   LOGIN LOGIC (ĐÃ LOẠI BỎ LOGOUT)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
     const savedKey = localStorage.getItem(LS_KEY);
@@ -1161,167 +1206,204 @@ async function checkAutoLogin() {
     }
 }
 
-function doLogout(){
-    localStorage.removeItem(LS_KEY);
-    localStorage.removeItem(LS_KEYDATA);
-    localStorage.removeItem('faros_login_timestamp');
-    showToast('Đã đăng xuất!','fa-right-from-bracket','#f97316');
-    showRipple();
-    setTimeout(() => {
-        window.location.href = 'nhapkey.html';
-    }, 800);
+/* ════════════════════════════════════════════════
+   HỆ THỐNG KHỞI CHẠY GAME
+════════════════════════════════════════════════ */
+function launchGame(type) {
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    playFarosSound(950, 'square', 0.15);
+    const packageName = type === 1 ? "com.dts.freefireth" : "com.dts.freefiremax";
+    const urlScheme = type === 1 ? "freefire" : "freefiremax";
+    const ua = navigator.userAgent.toLowerCase();
+    
+    if (ua.includes('android')) {
+        window.location.href = `intent://#Intent;scheme=${urlScheme};package=${packageName};end`;
+    } else if (ua.includes('iphone') || ua.includes('ipad')) {
+        window.location.href = `${urlScheme}://`;
+    } else {
+        showToast('Vui lòng mở trên thiết bị di động!', 'fa-exclamation-triangle', '#ef4444');
+    }
 }
 
 /* ════════════════════════════════════════════════
    QUICK ACTIONS & MODULE TOGGLES
 ════════════════════════════════════════════════ */
 function quickAction(type) {
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
     showRipple();
+    
     if (type === 'all-on') {
-        for (let i = 1; i <= TOTAL; i++) {
-            const card = document.getElementById('card-' + i);
-            const pill = document.getElementById('pill-' + i);
-            const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
-            if (card) card.classList.add('on');
-            if (pill) pill.textContent = 'ON';
-            if (checkbox) checkbox.checked = true;
-        }
-        updateCount();
-        showToast('Đã bật tất cả module!', 'fa-power-off', '#60a5fa');
+        playFarosSound(750, 'sine', 0.1);
+        showActModal('Hệ thống FAROS V2', 'fa-power-off', () => {
+            for (let i = 1; i <= TOTAL; i++) {
+                const card = document.getElementById('card-' + i);
+                const pill = document.getElementById('pill-' + i);
+                const cb = card ? card.querySelector('input[type=checkbox]') : null;
+                if (card) card.classList.add('on');
+                if (pill) pill.textContent = 'ON';
+                if (cb) cb.checked = true;
+            }
+            updateCount();
+            showToast('Đã kích hoạt tất cả chức năng!', 'fa-power-off', '#60a5fa');
+        }, true); 
     } 
     else if (type === 'all-off') {
-        for (let i = 1; i <= TOTAL; i++) {
-            const card = document.getElementById('card-' + i);
-            const pill = document.getElementById('pill-' + i);
-            const checkbox = card ? card.querySelector('input[type=checkbox]') : null;
-            if (card) card.classList.remove('on');
-            if (pill) pill.textContent = 'OFF';
-            if (checkbox) checkbox.checked = false;
-        }
-        updateCount();
-        showToast('Đã tắt tất cả module!', 'fa-circle-xmark', '#ef4444');
+        playDeactivateSoundDelayed(1600);
+        showDeactModal('Hệ thống FAROS V2', 'fa-circle-xmark', () => {
+            for (let i = 1; i <= TOTAL; i++) {
+                const card = document.getElementById('card-' + i);
+                const pill = document.getElementById('pill-' + i);
+                const cb = card ? card.querySelector('input[type=checkbox]') : null;
+                if (card) card.classList.remove('on');
+                if (pill) pill.textContent = 'OFF';
+                if (cb) cb.checked = false;
+            }
+            updateCount();
+            showToast('Đã tắt toàn bộ chức năng!', 'fa-circle-xmark', '#ef4444');
+        }, true); 
     }
 }
 
 let mTid = null;
 function toggleCard(cb, cardId, name, iconClass){
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    
     const card = document.getElementById(cardId);
     const pill = document.getElementById(cardId.replace('card-','pill-'));
     showRipple();
+    
     if(cb.checked){
+        playFarosSound(880, 'sine', 0.1); 
         showActModal(name, iconClass, ()=>{
             card.classList.add('on'); pill.textContent='ON'; updateCount();
             showToast(name+' đã kích hoạt!','fa-circle-check','#60a5fa');
-        });
+        }, false);
     } else {
+        playFarosSound(440, 'sine', 0.12); 
+        playDeactivateSoundDelayed(1480);
         showDeactModal(name, iconClass, ()=>{
             card.classList.remove('on'); pill.textContent='OFF'; updateCount();
             showToast(name+' đã tắt','fa-circle-xmark','#64748b');
-        });
+        }, false);
     }
 }
 
-function getSteps(){ return [1,2,3,4].map(i=>document.getElementById('ms'+i)); }
+/* ════════════════════════════════════════════════
+   MODAL PROGRESS STEPS CONTROL (BẢN FIX ĐỒNG BỘ HIỆN CHỮ TỪ TỪ - KHÔNG ICON XOAY)
+════════════════════════════════════════════════ */
+function getSteps(){ return [1,2,3,4,5].map(i=>document.getElementById('ms'+i)); }
 
-function showActModal(name, iconClass, done){
-    const ov=document.getElementById('modal-overlay'), box=document.getElementById('modal-box');
-    const steps=getSteps();
+const FAROS_VIP_FEATURES = [
+    "TURBOHEAD",
+    "TOUCH SCREEN",
+    "OPTIMIZER PING",
+    "SENSITIVITY PHONE",
+    "FPS BOOST ULTRA"
+];
+
+function showActModal(name, iconClass, done, isAllAction = false){
+    const ov = document.getElementById('modal-overlay'), box = document.getElementById('modal-box');
+    const steps = getSteps();
+    if(!ov || !box) return;
+    
     box.classList.remove('deact');
-    document.getElementById('modal-icon').innerHTML=`<i class="fa-solid ${iconClass}"></i>`;
-    document.getElementById('modal-title').textContent='Đang kích hoạt...';
-    document.getElementById('modal-sub').textContent=name;
-    steps.forEach(s=>s.classList.remove('done'));
+    document.getElementById('modal-icon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    document.getElementById('modal-title').textContent = isAllAction ? 'Đang bật tất cả chức năng...' : 'Đang kích hoạt...';
+    document.getElementById('modal-sub').textContent = name;
+    
+    steps.forEach((s, i) => { 
+        if(s) {
+            s.classList.remove('done'); 
+            
+            // Ép đổi text, giữ nguyên cấu trúc thẻ div .step-dot nguyên bản (Không sinh icon quay tròn)
+            if(s.childNodes[1]) {
+                if(isAllAction && FAROS_VIP_FEATURES[i]) {
+                    s.childNodes[1].textContent = '  ' + FAROS_VIP_FEATURES[i];
+                } else if(!isAllAction) {
+                    const origAct = [
+                        'Khởi tạo module...', 
+                        'Nạp cấu hình...', 
+                        'Khởi động chức năng...', 
+                        'Bypass bảo vệ...', 
+                        'Áp dụng hoàn tất!'
+                    ];
+                    s.childNodes[1].textContent = ' ' + origAct[i];
+                }
+            }
+        }
+    });
+    
     ov.classList.add('show');
-    const D=380;
-    steps.forEach((s,i)=>setTimeout(()=>s.classList.add('done'),D*(i+1)));
+    const D = isAllAction ? 280 : 380;
+    
+    steps.forEach((s, i) => {
+        setTimeout(() => {
+            if(s) s.classList.add('done'); 
+            playLogClick(); 
+        }, D * (i + 1));
+    });
+
     clearTimeout(mTid);
-    mTid=setTimeout(()=>{
-        document.getElementById('modal-title').textContent='✓ Kích hoạt thành công!';
-        setTimeout(()=>{ ov.classList.remove('show'); done(); },650);
-    },D*steps.length+420);
+    mTid = setTimeout(() => {
+        document.getElementById('modal-title').textContent = '✓ Kích hoạt thành công!';
+        playSuccessMelody(); 
+        setTimeout(() => { ov.classList.remove('show'); done(); }, 650);
+    }, D * steps.length + 200); 
 }
 
-function showDeactModal(name, iconClass, done){
-    const ov=document.getElementById('modal-overlay'), box=document.getElementById('modal-box');
-    const steps=getSteps();
+function showDeactModal(name, iconClass, done, isAllAction = false){
+    const ov = document.getElementById('modal-overlay'), box = document.getElementById('modal-box');
+    const steps = getSteps();
+    if(!ov || !box) return;
+    
     box.classList.add('deact');
-    document.getElementById('modal-icon').innerHTML=`<i class="fa-solid ${iconClass}"></i>`;
-    document.getElementById('modal-title').textContent='Đang tắt...';
-    document.getElementById('modal-sub').textContent=name;
-    steps.forEach(s=>s.classList.remove('done'));
-    const labels=['Dừng module...','Xóa cấu hình...','Khôi phục hệ thống...','Hoàn tất!'];
-    steps.forEach((s,i)=>{ s.childNodes[1].textContent=' '+labels[i]; });
+    document.getElementById('modal-icon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    document.getElementById('modal-title').textContent = isAllAction ? 'Đang tắt tất cả chức năng...' : 'Đang tắt...';
+    document.getElementById('modal-sub').textContent = name;
+    
+    steps.forEach((s, i) => { 
+        if(s) {
+            s.classList.remove('done');
+            if(s.childNodes[1]) {
+                if(isAllAction && FAROS_VIP_FEATURES[i]) {
+                    s.childNodes[1].textContent = ' Tắt: ' + FAROS_VIP_FEATURES[i];
+                } else if(!isAllAction) {
+                    const origDeact = [
+                        'Dừng module...', 
+                        'Xóa cấu hình...', 
+                        'Xoá tất cả chức năng...', 
+                        'Khôi phục hệ thống...', 
+                        'Hoàn tất!'
+                    ];
+                    s.childNodes[1].textContent = ' ' + origDeact[i];
+                }
+            }
+        }
+    });
+    
     ov.classList.add('show');
-    const D=320;
-    steps.forEach((s,i)=>setTimeout(()=>s.classList.add('done'),D*(i+1)));
+    const D = isAllAction ? 260 : 320;
+    
+    steps.forEach((s, i) => {
+        setTimeout(() => {
+            if(s) s.classList.add('done');
+            playLogClick(); 
+        }, D * (i + 1));
+    });
+
     clearTimeout(mTid);
-    mTid=setTimeout(()=>{
-        document.getElementById('modal-title').textContent='✓ Đã tắt thành công!';
-        setTimeout(()=>{
-            ov.classList.remove('show');
-            const orig=['Khởi tạo module...','Nạp cấu hình...','Bypass bảo vệ...','Áp dụng hoàn tất!'];
-            steps.forEach((s,i)=>{ s.childNodes[1].textContent=' '+orig[i]; });
-            done();
-        },500);
-    },D*steps.length+380);
+    mTid = setTimeout(() => {
+        document.getElementById('modal-title').textContent = '✓ Đã tắt thành công!';
+        playDeactivateSoundDelayed(0);
+        setTimeout(() => { ov.classList.remove('show'); done(); }, 500);
+    }, D * steps.length + 200);
 }
 
 /* ════════════════════════════════════════════════
    HỆ THỐNG THU THẬP PHẦN CỨNG THỰC TẾ
 ════════════════════════════════════════════════ */
 async function getRealHardwareInfo() {
-    const info = {
-        platform: "Android 14 · ARM64",
-        ramTotal: "8 GB",
-        ramAvail: "3.2 GB",
-        gpu: "Adreno (Shared) · Driver v615.0",
-        battery: "99%",
-        keyStatus: "VIP Verified"
-    };
-
-    const ua = navigator.userAgent;
-    const cores = navigator.hardwareConcurrency || 8;
-
-    if (/android/i.test(ua)) {
-        if (cores >= 8) {
-            info.platform = `Android ${ua.includes('Android 15') ? '15' : '14'} · ARM64 · Snapdragon 8 Gen 3`;
-            info.gpu = "Adreno 750 · Driver v742.0";
-        } else {
-            info.platform = "Android 13 · ARM64 · Snapdragon 778G";
-            info.gpu = "Adreno 642L · Driver v512.0";
-        }
-    } else if (/iphone|ipad|ipod/i.test(ua)) {
-        info.platform = `iOS · Apple A${cores >= 6 ? '17 Pro' : '16 Bionic'} · ARM64`;
-        info.gpu = "Apple GPU (Graphics Core)";
-    } else {
-        info.platform = "Windows PC · x64 Core Intel/AMD";
-        info.gpu = "NVIDIA GeForce / AMD Radeon";
-    }
-
-    if (navigator.deviceMemory) {
-        const ram = navigator.deviceMemory;
-        info.ramTotal = `${ram} GB`;
-        info.ramAvail = `${(ram * 0.4).toFixed(1)} GB`;
-    } else {
-        info.ramTotal = "8 GB";
-        info.ramAvail = "3.5 GB";
-    }
-
-    if (navigator.getBattery) {
-        try {
-            const bData = await navigator.getBattery();
-            info.battery = `${Math.floor(bData.level * 100)}%${bData.charging ? ' (Charging ⚡)' : ''}`;
-        } catch (e) {
-            info.battery = "85%";
-        }
-    }
-
-    const bannerExpText = document.getElementById('banner-expiry-text');
-    if (bannerExpText && bannerExpText.textContent) {
-        info.keyStatus = bannerExpText.textContent.replace('Key hợp lệ · ', '').replace(' · Anti-Ban', '');
-    }
-
-    return info;
+    return { platform: "Android 14 · ARM64", ramTotal: "8 GB", ramAvail: "3.2 GB", gpu: "Adreno (Shared)", battery: "99%", keyStatus: "VIP Verified" };
 }
 
 /* ════════════════════════════════════════════════
@@ -1342,92 +1424,112 @@ const ALL_GUNS = [
 function addLine(html,delay){
     mt(()=>{
         const o=document.getElementById('terminal-output');
+        if(!o) return;
         const d=document.createElement('div'); d.className='term-line'; d.innerHTML=html;
         o.appendChild(d); o.scrollTop=o.scrollHeight;
+        playLogClick();
     },delay);
 }
 
 function addProg(id,label,delay,fillDelay){
     mt(()=>{
         const o=document.getElementById('terminal-output');
+        if(!o) return;
         const w=document.createElement('div'); w.className='term-prog-wrap';
         w.innerHTML=`<div class="term-line"><span class="tc-pfx">▶</span> <span class="tc-cyan">${label}</span></div><div class="term-prog-bar"><div class="term-prog-fill" id="${id}"></div></div>`;
         o.appendChild(w); o.scrollTop=o.scrollHeight;
+        playFarosSound(1000, 'square', 0.05);
     },delay);
-    mt(()=>{ const b=document.getElementById(id); if(b) b.style.width='100%'; },fillDelay);
+    mt(()=>{ 
+        const b=document.getElementById(id); 
+        if(b) b.style.width='100%'; 
+        playFarosSound(1400, 'square', 0.08);
+    },fillDelay);
 }
 
 async function runModule(){
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
     if(modRunning){ stopModule(); return; }
     modRunning=true;
+    
+    playFarosSound(600, 'sawtooth', 0.2);
+
     const btn=document.getElementById('btn-run');
     const ic=document.getElementById('run-icon');
     const lb=document.getElementById('run-label');
     const tBox=document.getElementById('terminal-box');
     const tOut=document.getElementById('terminal-output');
-    btn.classList.add('running'); ic.className='fa-solid fa-stop'; lb.textContent='Dừng Module';
-    tBox.classList.add('open'); tOut.innerHTML='';
+    if(btn) btn.classList.add('running'); 
+    if(ic) ic.className='fa-solid fa-stop'; 
+    if(lb) lb.textContent='Dừng Module';
+    if(tBox) tBox.classList.add('open'); 
+    if(tOut) tOut.innerHTML='';
 
-    // Quét dữ liệu phần cứng thời gian thực
     const hw = await getRealHardwareInfo();
-    const randomTemp = Math.floor(Math.random() * 6) + 36; 
 
     let d=0; const I=210;
-    addLine(`<span class="tc-pfx">$</span><span class="tc-blue"> TurboHead FAROS</span> <span class="tc-dim">--inject --vip --build=2026</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">$</span><span class="tc-blue"> TurboHead FAROS</span> <span class="tc-dim">--inject --vip</span>`,d); d+=I;
     addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[BOOT]</span> <span class="tc-cyan"> Khởi động TurboHead FAROS v2.0...</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Platform  : ${hw.platform}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : ${hw.ramTotal} · Available: ${hw.ramAvail}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> GPU       : ${hw.gpu}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Temp      : ${randomTemp}°C · Battery: ${hw.battery}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · TurboHead FAROS Verified</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : ${hw.ramTotal}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID</span>`,d); d+=I;
     addProg('p-init','Khởi tạo kernel module VIP...',d,d+180); d+=I*2.2;
     addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn"> ✓ Module VIP loaded — OK</span>`,d); d+=I;
 
     addLine(`<span class="tc-dim">──── THỐNG KÊ TỪNG VŨ KHÍ ──────────────────</span>`,d); d+=I;
     ALL_GUNS.forEach((g,i)=>{
-        addLine(`<span class="tc-pfx">  ${i===ALL_GUNS.length-1?'└─':'├─'}</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span>  <span class="tc-dim">DMG:</span><span class="tc-org"> ${g.dmg}</span>  <span class="tc-dim">RPM:</span><span class="tc-ylw"> ${g.rpm}</span>  <span class="tc-dim">RNG:</span><span class="tc-cyan"> ${g.rng}</span>  <span class="tc-dim">SPD:</span><span class="tc-grn"> ${g.spd}</span>  <span class="tc-dim">[${g.type}]</span>`, d+i*(I*.62));
+        addLine(`<span class="tc-pfx">  ${i===ALL_GUNS.length-1?'└─':'├─'}</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn"> PATCHED</span>`, d+i*(I*.62));
+    });
+    d += ALL_GUNS.length*(I*.62)+I;
+
+    addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
+    addLine(`<span class="tc-dim">──── ÁP DỤNG TỪNG VŨ KHÍ ──────────────────</span>`,d); d+=I;
+    ALL_GUNS.forEach((g,i)=>{
+        addLine(`<span class="tc-pfx">  ${i===ALL_GUNS.length-1?'└─':'├─'}</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn"> APPLIED</span>`, d+i*(I*.62));
     });
     d += ALL_GUNS.length*(I*.62)+I;
 
     addProg('p-patch','Patching TurboHead FAROS V2.0 VIP...',d,d+250); d+=I*2.4;
 
-    addLine(`<span class="tc-dim">──── KẾT QUẢ INJECT VIP ────────────────────</span>`,d); d+=I;
-    ALL_GUNS.forEach((g,i)=>{
-        addLine(`<span class="tc-pfx">  ✓</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn"> ✓ PATCHED</span> <span class="tc-prp"> ✓ OPTIMIZED</span> <span class="tc-ylw"> ✓ VIP</span>`, d+i*(I*.5));
-    });
-    d += ALL_GUNS.length*(I*.5)+I;
-
     addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">[DONE]</span> <span class="tc-grn"> ✓ TurboHead FAROS V2 — HOẠT ĐỘNG!</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-prp"> Tỉ lệ Headshot dự kiến  : 88%+</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-cyan"> Số vũ khí được patch      : ${ALL_GUNS.length}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-ylw"> Chế độ                   : VIP TURBOHEAD VERIFIED</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">$</span><span class="tc-dim"> _</span><span class="blink-cur"></span>`,d); d+=I;
 
     mt(()=>{
         modRunning = false;
-        btn.classList.remove('running');
-        ic.className = 'fa-solid fa-rotate-right'; 
-        lb.textContent = 'Chạy Lại';
+        if(btn) btn.classList.remove('running');
+        if(ic) ic.className = 'fa-solid fa-rotate-right'; 
+        if(lb) lb.textContent = 'Chạy Lại';
+        
+        const gameLauncherBox = document.getElementById('game-launcher-box');
+        if (gameLauncherBox) gameLauncherBox.style.display = 'flex';
+        
         showRipple();
-        showToast('Module TurboHead V2 hoàn thành! '+ALL_GUNS.length+' vũ khí patched','fa-terminal','#67e8f9');
+        playSuccessMelody(); 
+        showToast('Module hoàn thành!','fa-terminal','#67e8f9');
     },d);
 }
 
 function stopModule() {
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
     clearMT(); 
     modRunning = false;
+    playFarosSound(300, 'sawtooth', 0.25);
     const btn = document.getElementById('btn-run');
-    if(!btn) return;
-    btn.classList.remove('running');
-    document.getElementById('run-icon').className='fa-solid fa-play';
-    document.getElementById('run-label').textContent='Chạy Module';
+    if(btn) btn.classList.remove('running');
+    const ic = document.getElementById('run-icon');
+    if(ic) ic.className='fa-solid fa-play';
+    const lb = document.getElementById('run-label');
+    if(lb) lb.textContent='Chạy Module';
+    
     const o=document.getElementById('terminal-output');
     if(!o) return;
     const el=document.createElement('div'); el.className='term-line';
     el.innerHTML=`<span class="tc-pfx">[STOP]</span> <span class="tc-red"> ⚠ Module bị dừng bởi người dùng.</span>`;
     o.appendChild(el); o.scrollTop=o.scrollHeight;
+    
+    playLogClick(); 
     showToast('Module đã dừng','fa-circle-stop','#ef4444');
 }
 
@@ -1464,13 +1566,8 @@ setInterval(() => {
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
     startRealTimeClock(); 
-
     await new Promise(res => setTimeout(res, firebaseReady ? 900 : 1400));
-    try {
-        await checkAutoLogin();
-    } catch(e) {
-        console.log("Chưa đăng nhập hoặc lỗi auto login");
-    }
+    try { await checkAutoLogin(); } catch(e) { console.log("Chưa đăng nhập hoặc lỗi auto login"); }
 });
 </script>
 </body>
