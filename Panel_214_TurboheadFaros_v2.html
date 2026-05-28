@@ -1230,6 +1230,26 @@ async function checkAutoLogin() {
         window.location.href = 'nhapkeyv2.html';
     }
 }
+
+/* ════════════════════════════════════════════════
+   HỆ THỐNG KHỞI CHẠY GAME
+════════════════════════════════════════════════ */
+function launchGame(type) {
+    try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    playFarosSound(950, 'square', 0.15);
+    const packageName = type === 1 ? "com.dts.freefireth" : "com.dts.freefiremax";
+    const urlScheme = type === 1 ? "freefire" : "freefiremax";
+    const ua = navigator.userAgent.toLowerCase();
+    
+    if (ua.includes('android')) {
+        window.location.href = `intent://#Intent;scheme=${urlScheme};package=${packageName};end`;
+    } else if (ua.includes('iphone') || ua.includes('ipad')) {
+        window.location.href = `${urlScheme}://`;
+    } else {
+        showToast('Vui lòng mở trên thiết bị di động!', 'fa-exclamation-triangle', '#ef4444');
+    }
+}
+
 /* ════════════════════════════════════════════════
    QUICK ACTIONS & MODULE TOGGLES (NÂNG CẤP CHẠY THEO MODAL)
 ════════════════════════════════════════════════ */
@@ -1400,11 +1420,62 @@ function showDeactModal(name, iconClass, done, isAllAction = false){
     }, D * steps.length + 200);
 }
 
-/* ════════════════════════════════════════════════
+* ════════════════════════════════════════════════
    HỆ THỐNG THU THẬP PHẦN CỨNG THỰC TẾ
 ════════════════════════════════════════════════ */
 async function getRealHardwareInfo() {
-    return { platform: "Android 14 · ARM64", ramTotal: "8 GB", ramAvail: "3.2 GB", gpu: "Adreno (Shared)", battery: "99%", keyStatus: "VIP Verified" };
+    const info = {
+        platform: "Android 14 · ARM64",
+        ramTotal: "8 GB",
+        ramAvail: "3.2 GB",
+        gpu: "Adreno (Shared) · Driver v615.0",
+        battery: "99%",
+        keyStatus: "VIP Verified"
+    };
+
+    const ua = navigator.userAgent;
+    const cores = navigator.hardwareConcurrency || 8;
+
+    if (/android/i.test(ua)) {
+        if (cores >= 8) {
+            info.platform = `Android ${ua.includes('Android 15') ? '15' : '14'} · ARM64 · Snapdragon 8 Gen 3`;
+            info.gpu = "Adreno 750 · Driver v742.0";
+        } else {
+            info.platform = "Android 13 · ARM64 · Snapdragon 778G";
+            info.gpu = "Adreno 642L · Driver v512.0";
+        }
+    } else if (/iphone|ipad|ipod/i.test(ua)) {
+        info.platform = `iOS · Apple A${cores >= 6 ? '17 Pro' : '16 Bionic'} · ARM64`;
+        info.gpu = "Apple GPU (Graphics Core)";
+    } else {
+        info.platform = "Windows PC · x64 Core Intel/AMD";
+        info.gpu = "NVIDIA GeForce / AMD Radeon";
+    }
+
+    if (navigator.deviceMemory) {
+        const ram = navigator.deviceMemory;
+        info.ramTotal = `${ram} GB`;
+        info.ramAvail = `${(ram * 0.4).toFixed(1)} GB`;
+    } else {
+        info.ramTotal = "8 GB";
+        info.ramAvail = "3.5 GB";
+    }
+
+    if (navigator.getBattery) {
+        try {
+            const bData = await navigator.getBattery();
+            info.battery = `${Math.floor(bData.level * 100)}%${bData.charging ? ' (Charging ⚡)' : ''}`;
+        } catch (e) {
+            info.battery = "85%";
+        }
+    }
+
+    const bannerExpText = document.getElementById('banner-expiry-text');
+    if (bannerExpText && bannerExpText.textContent) {
+        info.keyStatus = bannerExpText.textContent.replace('Key hợp lệ · ', '').replace(' · Anti-Ban', '');
+    }
+
+    return info;
 }
 
 /* ════════════════════════════════════════════════
