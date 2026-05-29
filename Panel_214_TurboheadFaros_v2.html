@@ -941,14 +941,13 @@
         </div>
     </div>
 </div>
-
 <script>
 /* ════════════════════════════════════════════════
    FIREBASE CONFIG & INIT
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
     apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
-    databaseURL: "https://shopfarossite-default-rtdb.firebaseiocom",
+    databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com",
 };
 
 let db = null;
@@ -1080,20 +1079,6 @@ setInterval(()=>{
 }, 3500);
 
 /* ════════════════════════════════════════════════
-   FLOATING HEXAGONS
-════════════════════════════════════════════════ */
-(function(){
-    const bg = document.getElementById('hex-bg');
-    if(!bg) return;
-    for(let i=0;i<14;i++){
-        const h = document.createElement('div');
-        h.className = 'hex';
-        h.style.cssText = `left:${Math.random()*100}%;animation-duration:${Math.random()*22+18}s;animation-delay:${Math.random()*-30}s;transform:scale(${Math.random()*.8+.4})`;
-        bg.appendChild(h);
-    }
-})();
-
-/* ════════════════════════════════════════════════
    SESSION TIMER
 ════════════════════════════════════════════════ */
 function startRealTimeClock() {
@@ -1113,14 +1098,16 @@ function startRealTimeClock() {
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG QUẢN LÝ BẢN QUYỀN
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN (ĐÃ FIX)
 ════════════════════════════════════════════════ */
 let licenseTimerInterval = null;
 
 function updateDashboardUI(keyVal, keyData) {
     if (!keyData) return;
+
     const keyDisplay = document.getElementById('display-user-key');
     if (keyDisplay) keyDisplay.textContent = keyVal || "UNKNOWN";
+
     const licenseDisplay = document.getElementById('display-license-status');
     const bannerExpText = document.getElementById('banner-expiry-text');
     if (!licenseDisplay) return;
@@ -1129,26 +1116,31 @@ function updateDashboardUI(keyVal, keyData) {
     const keyUpper = String(keyVal).toUpperCase();
     let expiresAt = null;
     let keyTypeText = "";
+
+    // [FIXED] Tránh lỗi NaN khi localStorage bị hỏng
     let loginTime = localStorage.getItem('faros_login_timestamp');
-    if (!loginTime) {
+    if (!loginTime || isNaN(Number(loginTime))) {
         loginTime = Date.now();
         localStorage.setItem('faros_login_timestamp', loginTime);
     } else {
         loginTime = Number(loginTime);
     }
 
-    if (keyUpper.includes('-1D-')) { expiresAt = loginTime + (86400000); keyTypeText = "1 Ngày"; } 
-    else if (keyUpper.includes('-3D-')) { expiresAt = loginTime + (3 * 86400000); keyTypeText = "3 Ngày"; }
-    else if (keyUpper.includes('-7D-')) { expiresAt = loginTime + (7 * 86400000); keyTypeText = "7 Ngày"; } 
-    else if (keyUpper.includes('-15D-')) { expiresAt = loginTime + (15 * 86400000); keyTypeText = "15 Ngày"; }
-    else if (keyUpper.includes('-30D-') || keyUpper.includes('-1M-')) { expiresAt = loginTime + (30 * 86400000); keyTypeText = "30 Ngày"; }
+    // [FIXED] Nới lỏng điều kiện bắt KEY (Chỉ cần có 1D, 3D thay vì bắt buộc có gạch ngang -1D-)
+    if (keyUpper.includes('1D')) { expiresAt = loginTime + (1 * 86400000); keyTypeText = "1 Ngày"; } 
+    else if (keyUpper.includes('3D')) { expiresAt = loginTime + (3 * 86400000); keyTypeText = "3 Ngày"; }
+    else if (keyUpper.includes('7D')) { expiresAt = loginTime + (7 * 86400000); keyTypeText = "7 Ngày"; } 
+    else if (keyUpper.includes('15D')) { expiresAt = loginTime + (15 * 86400000); keyTypeText = "15 Ngày"; }
+    else if (keyUpper.includes('30D') || keyUpper.includes('1M')) { expiresAt = loginTime + (30 * 86400000); keyTypeText = "30 Ngày"; }
     else {
+        // VĨNH VIỄN HOẶC KHÔNG RÕ
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
+    // [FIXED] CHẠY ĐẾM NGƯỢC THỜI GIAN
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
@@ -1158,10 +1150,12 @@ function updateDashboardUI(keyVal, keyData) {
                 clearInterval(licenseTimerInterval);
                 return;
             }
+
             const days = Math.floor(diff / 86400000);
             const hours = Math.floor((diff % 86400000) / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000);
             const secs = Math.floor((diff % 60000) / 1000);
+
             const formatH = String(hours).padStart(2, '0');
             const formatM = String(mins).padStart(2, '0');
             const formatS = String(secs).padStart(2, '0');
@@ -1177,28 +1171,21 @@ function updateDashboardUI(keyVal, keyData) {
         renderCountdown();
         licenseTimerInterval = setInterval(renderCountdown, 1000);
     } else {
-        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Không xác định</span>`;
-        if (bannerExpText) bannerExpText.textContent = 'Trạng thái key không xác định';
+        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Lỗi</span>`;
+        if (bannerExpText) bannerExpText.textContent = 'Trạng thái key không hợp lệ';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
     }
 }
 
 /* ════════════════════════════════════════════════
-   LOGIN LOGIC
+   LOGIN LOGIC (ĐÃ FIX CHỐNG LOOP)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
-    const savedKey = localStorage.getItem(LS_KEY);
-    const savedData = localStorage.getItem(LS_KEYDATA);
-
-    function hienThiManHinhLogin() {
-        const splash = document.getElementById('splash-screen');
-        if (splash) splash.style.display = 'none';
-        const loginScreen = document.getElementById('login-screen');
-        if (loginScreen) {
-            loginScreen.style.display = 'flex';
-            loginScreen.classList.add('active');
-        }
-    }
+    let savedKey = localStorage.getItem(LS_KEY);
+    let savedData = localStorage.getItem(LS_KEYDATA);
+    
+    const currentURL = window.location.href.toLowerCase();
+    const isLoginPage = currentURL.includes('nhapkey') || currentURL.includes('login');
 
     if (savedKey && savedData) {
         try {
@@ -1207,20 +1194,12 @@ async function checkAutoLogin() {
                 localStorage.setItem('faros_login_timestamp', Date.now());
             }
             updateDashboardUI(savedKey, keyData);
-            
-            const idsToHide = ['login-screen', 'splash-screen', 'welcome-overlay', 'check-overlay', 'blocked-overlay'];
-            idsToHide.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) { el.style.display = 'none'; el.classList.remove('active'); }
-            });
-
-            const dashboard = document.getElementById('dashboard');
-            if (dashboard) { dashboard.style.display = 'block'; dashboard.classList.add('active'); }
         } catch (e) {
-            hienThiManHinhLogin();
+            console.error("Lỗi parse data:", e);
+            if (!isLoginPage) window.location.href = 'nhapkeyv2.html';
         }
     } else {
-        hienThiManHinhLogin();
+        if (!isLoginPage) window.location.href = 'nhapkeyv2.html';
     }
 }
 
@@ -1307,7 +1286,7 @@ function toggleCard(cb, cardId, name, iconClass){
 }
 
 /* ════════════════════════════════════════════════
-   MODAL PROGRESS STEPS CONTROL (BẢN FIX ĐỒNG BỘ HIỆN CHỮ TỪ TỪ - KHÔNG ICON XOAY)
+   MODAL PROGRESS STEPS CONTROL 
 ════════════════════════════════════════════════ */
 function getSteps(){ return [1,2,3,4,5].map(i=>document.getElementById('ms'+i)); }
 
@@ -1332,19 +1311,11 @@ function showActModal(name, iconClass, done, isAllAction = false){
     steps.forEach((s, i) => { 
         if(s) {
             s.classList.remove('done'); 
-            
-            // Ép đổi text, giữ nguyên cấu trúc thẻ div .step-dot nguyên bản (Không sinh icon quay tròn)
             if(s.childNodes[1]) {
                 if(isAllAction && FAROS_VIP_FEATURES[i]) {
                     s.childNodes[1].textContent = '  ' + FAROS_VIP_FEATURES[i];
                 } else if(!isAllAction) {
-                    const origAct = [
-                        'Khởi tạo module...', 
-                        'Nạp cấu hình...', 
-                        'Khởi động chức năng...', 
-                        'Bypass bảo vệ...', 
-                        'Áp dụng hoàn tất!'
-                    ];
+                    const origAct = ['Khởi tạo module...', 'Nạp cấu hình...', 'Khởi động chức năng...', 'Bypass bảo vệ...', 'Áp dụng hoàn tất!'];
                     s.childNodes[1].textContent = ' ' + origAct[i];
                 }
             }
@@ -1386,13 +1357,7 @@ function showDeactModal(name, iconClass, done, isAllAction = false){
                 if(isAllAction && FAROS_VIP_FEATURES[i]) {
                     s.childNodes[1].textContent = ' Tắt: ' + FAROS_VIP_FEATURES[i];
                 } else if(!isAllAction) {
-                    const origDeact = [
-                        'Dừng module...', 
-                        'Xóa cấu hình...', 
-                        'Xoá tất cả chức năng...', 
-                        'Khôi phục hệ thống...', 
-                        'Hoàn tất!'
-                    ];
+                    const origDeact = ['Dừng module...', 'Xóa cấu hình...', 'Xoá tất cả chức năng...', 'Khôi phục hệ thống...', 'Hoàn tất!'];
                     s.childNodes[1].textContent = ' ' + origDeact[i];
                 }
             }
@@ -1458,14 +1423,8 @@ async function getRealHardwareInfo() {
         info.ramAvail = "3.5 GB";
     }
 
-    if (navigator.getBattery) {
-        try {
-            const bData = await navigator.getBattery();
-            info.battery = `${Math.floor(bData.level * 100)}%${bData.charging ? ' (Charging ⚡)' : ''}`;
-        } catch (e) {
-            info.battery = "85%";
-        }
-    }
+    // [FIXED] Gỡ bỏ API Pin gây treo tiến trình giả lập
+    info.battery = "98% (Tối ưu)";
 
     const bannerExpText = document.getElementById('banner-expiry-text');
     if (bannerExpText && bannerExpText.textContent) {
@@ -1495,7 +1454,6 @@ function addLine(html,delay){
         const o=document.getElementById('terminal-output');
         const d=document.createElement('div'); d.className='term-line'; d.innerHTML=html;
         o.appendChild(d); o.scrollTop=o.scrollHeight;
-        // Phát tiếng tick bàn phím nhẹ khi hiển thị dòng mới
         playFarosSound(1200, 'sine', 0.02);
     },delay);
 }
@@ -1519,7 +1477,6 @@ async function runModule(){
     if(modRunning){ stopModule(); return; }
     modRunning=true;
     
-    // Phát âm thanh khởi động Module
     playFarosSound(600, 'sawtooth', 0.2);
 
     const btn=document.getElementById('btn-run');
@@ -1530,7 +1487,6 @@ async function runModule(){
     btn.classList.add('running'); ic.className='fa-solid fa-stop'; lb.textContent='Dừng Module';
     tBox.classList.add('open'); tOut.innerHTML='';
 
-    // Quét dữ liệu phần cứng thời gian thực
     const hw = await getRealHardwareInfo();
     const randomTemp = Math.floor(Math.random() * 6) + 36; 
 
@@ -1567,21 +1523,19 @@ async function runModule(){
     addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-ylw"> Chế độ                   : VIP TURBOHEAD VERIFIED</span>`,d); d+=I;
     addLine(`<span class="tc-pfx">$</span><span class="tc-dim"> _</span><span class="blink-cur"></span>`,d); d+=I;
 
-    // === HOÀN THÀNH MODULE & HIỂN THỊ 2 BOX VÀO GAME ===
     mt(()=>{
         modRunning = false;
         btn.classList.remove('running');
         ic.className = 'fa-solid fa-rotate-right'; 
         lb.textContent = 'Chạy Lại';
         
-        // Kích hoạt hiển thị khung chứa 2 box Đăng nhập thẳng vào Game (FF và FF Max)
         const gameLauncherBox = document.getElementById('game-launcher-box');
         if (gameLauncherBox) {
-            gameLauncherBox.style.display = 'flex'; // Hiện khối dạng flex layout chuyên nghiệp
+            gameLauncherBox.style.display = 'flex';
         }
         
         showRipple();
-        playSuccessMelody(); // Phát chuỗi âm thanh báo hoàn thành tuyệt đối!
+        playSuccessMelody(); 
         showToast('Module TurboHead V2 hoàn thành! '+ALL_GUNS.length+' vũ khí patched','fa-terminal','#67e8f9');
     },d);
 }
@@ -1590,7 +1544,6 @@ function stopModule() {
     clearMT(); 
     modRunning = false;
     
-    // Phát âm thanh báo dừng Module bất ngờ
     playFarosSound(300, 'sawtooth', 0.25);
 
     const btn = document.getElementById('btn-run');
@@ -1607,32 +1560,52 @@ function stopModule() {
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG BẢO MẬT FAROS
+   HỆ THỐNG BẢO MẬT FAROS - ANTI-COPY & ANTI-F12
 ════════════════════════════════════════════════ */
 document.addEventListener('contextmenu', event => event.preventDefault());
 
 document.addEventListener('keydown', event => {
-    if (event.key === 'F12') { event.preventDefault(); return false; }
-    if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) { event.preventDefault(); return false; }
-    if (event.ctrlKey && (event.key === 'u' || event.key === 's' || event.key === 'c' || event.key === 'U' || event.key === 'S' || event.key === 'C')) { event.preventDefault(); return false; }
+    if (event.key === 'F12') {
+        event.preventDefault(); return false;
+    }
+    if (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'i' || event.key === 'j')) {
+        event.preventDefault(); return false;
+    }
+    if (event.ctrlKey && (event.key === 'u' || event.key === 's' || event.key === 'c' || event.key === 'U' || event.key === 'S' || event.key === 'C')) {
+        event.preventDefault(); return false;
+    }
 });
 
-const farosStyles = document.body.style;
-farosStyles.webkitUserSelect = "none";
-farosStyles.mozUserSelect = "none";
-farosStyles.msUserSelect = "none";
-farosStyles.userSelect = "none";
-farosStyles.webkitTouchCallout = "none";
-
-setInterval(() => { console.clear(); }, 1000);
+// Chạy bảo mật bằng DOMContentLoaded an toàn tuyệt đối
+document.addEventListener('DOMContentLoaded', () => {
+    const farosStyles = document.body.style;
+    if (farosStyles) {
+        farosStyles.webkitUserSelect = "none";
+        farosStyles.mozUserSelect = "none";
+        farosStyles.msUserSelect = "none";
+        farosStyles.userSelect = "none";
+        farosStyles.webkitTouchCallout = "none";
+    }
+});
 
 /* ════════════════════════════════════════════════
-   KHỞI ĐỘNG APP
+   KHỞI ĐỘNG APP (ĐÃ FIX LỖI TREO LOGO)
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
     startRealTimeClock(); 
+
     await new Promise(res => setTimeout(res, firebaseReady ? 900 : 1400));
-    try { await checkAutoLogin(); } catch(e) { console.log("Chưa đăng nhập hoặc lỗi auto login"); }
+    try {
+        await checkAutoLogin();
+    } catch(e) {
+        console.log("Chưa đăng nhập hoặc lỗi tự động kết nối");
+    } finally {
+        // [FIXED CỰC QUAN TRỌNG] LUÔN ẨN SPLASH SCREEN (MÀN HÌNH CHỜ) KHI MỌI THỨ XONG XUÔI ĐỂ TRÁNH TREO LOGO
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.classList.add('hidden');
+        }
+    }
 });
 </script>
 </body>
