@@ -1098,7 +1098,7 @@ function startRealTimeClock() {
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN (ĐÃ FIX)
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN
 ════════════════════════════════════════════════ */
 let licenseTimerInterval = null;
 
@@ -1117,35 +1117,36 @@ function updateDashboardUI(keyVal, keyData) {
     let expiresAt = null;
     let keyTypeText = "";
 
-    // [FIXED] Tránh lỗi NaN khi localStorage bị hỏng
+    // [FIXED] Sửa lỗi lưu bộ đệm Key cũ: Kiểm tra xem key vừa nhập có khác với key trước đó không.
     let loginTime = localStorage.getItem('faros_login_timestamp');
-    if (!loginTime || isNaN(Number(loginTime))) {
+    let lastKey = localStorage.getItem('faros_last_checked_key');
+
+    // Nếu không có mốc thời gian, HOẶC người dùng nhập 1 key hoàn toàn mới -> Reset lại mốc tính thời gian
+    if (!loginTime || isNaN(Number(loginTime)) || lastKey !== keyVal) {
         loginTime = Date.now();
         localStorage.setItem('faros_login_timestamp', loginTime);
+        localStorage.setItem('faros_last_checked_key', keyVal);
     } else {
         loginTime = Number(loginTime);
     }
 
-    // [FIXED] Nới lỏng điều kiện bắt KEY (Chỉ cần có 1D, 3D thay vì bắt buộc có gạch ngang -1D-)
     if (keyUpper.includes('1D')) { expiresAt = loginTime + (1 * 86400000); keyTypeText = "1 Ngày"; } 
     else if (keyUpper.includes('3D')) { expiresAt = loginTime + (3 * 86400000); keyTypeText = "3 Ngày"; }
     else if (keyUpper.includes('7D')) { expiresAt = loginTime + (7 * 86400000); keyTypeText = "7 Ngày"; } 
     else if (keyUpper.includes('15D')) { expiresAt = loginTime + (15 * 86400000); keyTypeText = "15 Ngày"; }
     else if (keyUpper.includes('30D') || keyUpper.includes('1M')) { expiresAt = loginTime + (30 * 86400000); keyTypeText = "30 Ngày"; }
     else {
-        // VĨNH VIỄN HOẶC KHÔNG RÕ
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // [FIXED] CHẠY ĐẾM NGƯỢC THỜI GIAN
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
             if (diff <= 0) {
-                licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn</span>`;
+                licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Yêu cầu Key Mới</span>`;
                 if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn!';
                 clearInterval(licenseTimerInterval);
                 return;
@@ -1178,7 +1179,7 @@ function updateDashboardUI(keyVal, keyData) {
 }
 
 /* ════════════════════════════════════════════════
-   LOGIN LOGIC (ĐÃ FIX CHỐNG LOOP)
+   LOGIN LOGIC & CHỨC NĂNG WATCHDOG (ĐÁ RA NGOÀI KHI XÓA KEY)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
     let savedKey = localStorage.getItem(LS_KEY);
@@ -1190,9 +1191,6 @@ async function checkAutoLogin() {
     if (savedKey && savedData) {
         try {
             const keyData = JSON.parse(savedData);
-            if (!localStorage.getItem('faros_login_timestamp')) {
-                localStorage.setItem('faros_login_timestamp', Date.now());
-            }
             updateDashboardUI(savedKey, keyData);
         } catch (e) {
             console.error("Lỗi parse data:", e);
@@ -1202,6 +1200,22 @@ async function checkAutoLogin() {
         if (!isLoginPage) window.location.href = 'nhapkeyv2.html';
     }
 }
+
+// [TÍNH NĂNG MỚI] - Watchdog giám sát key ngầm: Tự động đá ra trang nhập key nếu key bị xóa khỏi bộ nhớ
+setInterval(() => {
+    const currentURL = window.location.href.toLowerCase();
+    const isLoginPage = currentURL.includes('nhapkey') || currentURL.includes('login');
+    
+    if (!isLoginPage) {
+        let currentSavedKey = localStorage.getItem(LS_KEY);
+        let currentSavedData = localStorage.getItem(LS_KEYDATA);
+        
+        // Nếu 1 trong 2 dữ liệu bị mất -> Đá ngay lập tức về trang nhập key
+        if (!currentSavedKey || !currentSavedData) {
+            window.location.href = 'nhapkeyv2.html';
+        }
+    }
+}, 1500); // Check liên tục mỗi 1.5 giây
 
 /* ════════════════════════════════════════════════
    HỆ THỐNG KHỞI CHẠY GAME
@@ -1423,7 +1437,6 @@ async function getRealHardwareInfo() {
         info.ramAvail = "3.5 GB";
     }
 
-    // [FIXED] Gỡ bỏ API Pin gây treo tiến trình giả lập
     info.battery = "98% (Tối ưu)";
 
     const bannerExpText = document.getElementById('banner-expiry-text');
@@ -1576,7 +1589,6 @@ document.addEventListener('keydown', event => {
     }
 });
 
-// Chạy bảo mật bằng DOMContentLoaded an toàn tuyệt đối
 document.addEventListener('DOMContentLoaded', () => {
     const farosStyles = document.body.style;
     if (farosStyles) {
@@ -1589,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ════════════════════════════════════════════════
-   KHỞI ĐỘNG APP (ĐÃ FIX LỖI TREO LOGO)
+   KHỞI ĐỘNG APP
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
     startRealTimeClock(); 
@@ -1600,7 +1612,6 @@ window.addEventListener('load', async () => {
     } catch(e) {
         console.log("Chưa đăng nhập hoặc lỗi tự động kết nối");
     } finally {
-        // [FIXED CỰC QUAN TRỌNG] LUÔN ẨN SPLASH SCREEN (MÀN HÌNH CHỜ) KHI MỌI THỨ XONG XUÔI ĐỂ TRÁNH TREO LOGO
         const splash = document.getElementById('splash-screen');
         if (splash) {
             splash.classList.add('hidden');
