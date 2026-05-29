@@ -976,17 +976,24 @@ function playFarosSound(freq, type = 'sine', duration = 0.12) {
         initAudio();
         if (!audioCtx) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
+        
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
+        
         osc.type = type; 
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
         gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
+        
         osc.start();
         osc.stop(audioCtx.currentTime + duration);
-    } catch (e) {}
+    } catch (e) {
+        console.log("Audio Error:", e);
+    }
 }
 
 function playDeactivateSoundDelayed(delayMs) {
@@ -996,15 +1003,35 @@ function playDeactivateSoundDelayed(delayMs) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         const startTime = audioCtx.currentTime + (delayMs / 1000);
+
         const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
         osc1.type = 'sine'; osc1.frequency.setValueAtTime(600, startTime);
         gain1.gain.setValueAtTime(0.2, startTime); gain1.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
         osc1.connect(gain1); gain1.connect(audioCtx.destination);
         osc1.start(startTime); osc1.stop(startTime + 0.1);
-    } catch(e) {}
+
+        const startTime2 = startTime + 0.08;
+        const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+        osc2.type = 'sine'; osc2.frequency.setValueAtTime(450, startTime2);
+        gain2.gain.setValueAtTime(0.2, startTime2); gain2.gain.exponentialRampToValueAtTime(0.001, startTime2 + 0.1);
+        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+        osc2.start(startTime2); osc2.stop(startTime2 + 0.1);
+
+        const startTime3 = startTime + 0.16;
+        const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
+        osc3.type = 'sine'; osc3.frequency.setValueAtTime(300, startTime3);
+        gain3.gain.setValueAtTime(0.2, startTime3); gain3.gain.exponentialRampToValueAtTime(0.001, startTime3 + 0.15);
+        osc3.connect(gain3); gain3.connect(audioCtx.destination);
+        osc3.start(startTime3); osc3.stop(startTime3 + 0.15);
+    } catch(e) {
+        console.log("Audio error:", e);
+    }
 }
 
-function playLogClick() { playFarosSound(1200, 'square', 0.03); }
+function playLogClick() {
+    playFarosSound(1200, 'square', 0.03); 
+}
+
 function playSuccessMelody() {
     playFarosSound(880, 'triangle', 0.1);
     setTimeout(() => playFarosSound(1100, 'triangle', 0.1), 70);
@@ -1071,7 +1098,7 @@ function startRealTimeClock() {
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG QUẢN LÝ BẢN QUYỀN (ĐÃ SỬA LỖI KEY MỚI BỊ HẾT HẠN)
+   HỆ THỐNG QUẢN LÝ BẢN QUYỀN & ĐẾM NGƯỢC THỜI GIAN
 ════════════════════════════════════════════════ */
 let licenseTimerInterval = null;
 
@@ -1090,11 +1117,11 @@ function updateDashboardUI(keyVal, keyData) {
     let expiresAt = null;
     let keyTypeText = "";
 
-    // Lấy thời gian đăng nhập
+    // [FIXED] Sửa lỗi lưu bộ đệm Key cũ: Kiểm tra xem key vừa nhập có khác với key trước đó không.
     let loginTime = localStorage.getItem('faros_login_timestamp');
     let lastKey = localStorage.getItem('faros_last_checked_key');
 
-    // FIX LỖI 1D: Nếu đăng nhập bằng 1 Key hoàn toàn mới -> Reset lại thời gian bắt đầu
+    // Nếu không có mốc thời gian, HOẶC người dùng nhập 1 key hoàn toàn mới -> Reset lại mốc tính thời gian
     if (!loginTime || isNaN(Number(loginTime)) || lastKey !== keyVal) {
         loginTime = Date.now();
         localStorage.setItem('faros_login_timestamp', loginTime);
@@ -1119,13 +1146,9 @@ function updateDashboardUI(keyVal, keyData) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
             if (diff <= 0) {
-                licenseDisplay.innerHTML = `<span style="color:#ff453a;">Đã hết HSD</span>`;
+                licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Yêu cầu Key Mới</span>`;
                 if (bannerExpText) bannerExpText.textContent = 'Key đã hết hạn!';
                 clearInterval(licenseTimerInterval);
-                // Đá ra ngoài khi hết hạn
-                localStorage.removeItem(LS_KEY);
-                localStorage.removeItem(LS_KEYDATA);
-                setTimeout(() => { window.location.href = 'nhapkeyv2.html'; }, 2000);
                 return;
             }
 
@@ -1156,58 +1179,7 @@ function updateDashboardUI(keyVal, keyData) {
 }
 
 /* ════════════════════════════════════════════════
-   NGƯỜI GÁC CỔNG TRỰC TIẾP TỪ FIREBASE (WATCHDOG SERVER)
-════════════════════════════════════════════════ */
-function startFirebaseWatchdog(savedKey) {
-    if (!db) return; // Nếu chưa kết nối Firebase thì bỏ qua
-    
-    /* LƯU Ý QUAN TRỌNG: 
-       Đường dẫn mặc định mình để là 'keys/'. 
-       Nếu web tạo key của bạn lưu dữ liệu vào bảng có tên khác (Ví dụ: 'Keys', 'Users', 'DanhSachKey')
-       Thì bạn hãy thay đổi chữ 'keys/' dưới đây cho khớp với Firebase của bạn nhé!
-    */
-    const keyRef = db.ref('keys/' + savedKey); 
-    
-    // Đặt camera giám sát liên tục (Real-time Listener)
-    keyRef.on('value', (snapshot) => {
-        // Nếu Admin thao tác XÓA KEY trên server -> Dữ liệu trả về sẽ không tồn tại (null)
-        if (!snapshot.exists()) {
-            console.warn("⚠️ BÁO ĐỘNG: Key đã bị xóa khỏi Server Admin!");
-            
-            // Xóa sạch bộ nhớ tạm thời trên máy khách
-            localStorage.removeItem(LS_KEY);
-            localStorage.removeItem(LS_KEYDATA);
-            localStorage.removeItem('faros_login_timestamp');
-            localStorage.removeItem('faros_last_checked_key');
-            
-            // Đá văng người dùng ra trang đăng nhập NGAY LẬP TỨC
-            window.location.href = 'nhapkeyv2.html';
-        } else {
-            // (Tùy chọn) Nếu sau này bạn làm nút "Khóa Key" (Block) thay vì xóa, có thể check tại đây
-            // let data = snapshot.val();
-            // if(data.status === 'blocked') { window.location.href = 'nhapkeyv2.html'; }
-        }
-    });
-}
-
-/* ════════════════════════════════════════════════
-   NGƯỜI GÁC CỔNG BỘ NHỚ LOCAL (WATCHDOG CLIENT)
-════════════════════════════════════════════════ */
-setInterval(() => {
-    const currentURL = window.location.href.toLowerCase();
-    const isLoginPage = currentURL.includes('nhapkey') || currentURL.includes('login');
-    
-    if (!isLoginPage) {
-        let currentSavedKey = localStorage.getItem(LS_KEY);
-        // Chống tình trạng người dùng cố tình vào F12 xóa key để bypass
-        if (!currentSavedKey) {
-            window.location.href = 'nhapkeyv2.html';
-        }
-    }
-}, 1000); // Check liên tục mỗi giây
-
-/* ════════════════════════════════════════════════
-   LOGIN LOGIC 
+   LOGIN LOGIC & CHỨC NĂNG WATCHDOG (ĐÁ RA NGOÀI KHI XÓA KEY)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
     let savedKey = localStorage.getItem(LS_KEY);
@@ -1220,11 +1192,6 @@ async function checkAutoLogin() {
         try {
             const keyData = JSON.parse(savedData);
             updateDashboardUI(savedKey, keyData);
-            
-            // Nếu không phải trang đăng nhập, bật hệ thống giám sát từ xa (Firebase Watchdog)
-            if (!isLoginPage) {
-                startFirebaseWatchdog(savedKey);
-            }
         } catch (e) {
             console.error("Lỗi parse data:", e);
             if (!isLoginPage) window.location.href = 'nhapkeyv2.html';
@@ -1233,6 +1200,22 @@ async function checkAutoLogin() {
         if (!isLoginPage) window.location.href = 'nhapkeyv2.html';
     }
 }
+
+// [TÍNH NĂNG MỚI] - Watchdog giám sát key ngầm: Tự động đá ra trang nhập key nếu key bị xóa khỏi bộ nhớ
+setInterval(() => {
+    const currentURL = window.location.href.toLowerCase();
+    const isLoginPage = currentURL.includes('nhapkey') || currentURL.includes('login');
+    
+    if (!isLoginPage) {
+        let currentSavedKey = localStorage.getItem(LS_KEY);
+        let currentSavedData = localStorage.getItem(LS_KEYDATA);
+        
+        // Nếu 1 trong 2 dữ liệu bị mất -> Đá ngay lập tức về trang nhập key
+        if (!currentSavedKey || !currentSavedData) {
+            window.location.href = 'nhapkeyv2.html';
+        }
+    }
+}, 1500); // Check liên tục mỗi 1.5 giây
 
 /* ════════════════════════════════════════════════
    HỆ THỐNG KHỞI CHẠY GAME
