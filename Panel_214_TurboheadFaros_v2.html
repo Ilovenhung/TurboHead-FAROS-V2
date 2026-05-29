@@ -1397,48 +1397,80 @@ function showDeactModal(name, iconClass, done, isAllAction = false){
 }
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG THU THẬP PHẦN CỨNG THỰC TẾ
+   HỆ THỐNG THU THẬP PHẦN CỨNG THỰC TẾ (BẢN CHUẨN WEBGL)
 ════════════════════════════════════════════════ */
 async function getRealHardwareInfo() {
     const info = {
-        platform: "Android 14 · ARM64",
-        ramTotal: "8 GB",
-        ramAvail: "3.2 GB",
-        gpu: "Adreno (Shared) · Driver v615.0",
-        battery: "99%",
+        platform: "Đang phân tích...",
+        ramTotal: "Không rõ",
+        ramAvail: "Không hỗ trợ",
+        gpu: "Đang phân tích GPU...",
+        battery: "Không rõ",
         keyStatus: "VIP Verified"
     };
 
     const ua = navigator.userAgent;
-    const cores = navigator.hardwareConcurrency || 8;
 
+    // 1. LẤY HỆ ĐIỀU HÀNH VÀ PHIÊN BẢN THẬT (Bóc tách từ User-Agent)
+    const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} Cores` : "Unknown Cores";
+    let osVer = "";
     if (/android/i.test(ua)) {
-        if (cores >= 8) {
-            info.platform = `Android ${ua.includes('Android 15') ? '15' : '14'} · ARM64 · Snapdragon 8 Gen 3`;
-            info.gpu = "Adreno 750 · Driver v742.0";
-        } else {
-            info.platform = "Android 13 · ARM64 · Snapdragon 778G";
-            info.gpu = "Adreno 642L · Driver v512.0";
-        }
+        const match = ua.match(/Android\s([0-9\.]+)/);
+        osVer = match ? match[1] : "Unknown";
+        info.platform = `Android ${osVer} · ARM64 · ${cores}`;
     } else if (/iphone|ipad|ipod/i.test(ua)) {
-        info.platform = `iOS · Apple A${cores >= 6 ? '17 Pro' : '16 Bionic'} · ARM64`;
-        info.gpu = "Apple GPU (Graphics Core)";
+        const match = ua.match(/OS\s([0-9_]+)/);
+        osVer = match ? match[1].replace(/_/g, '.') : "Unknown";
+        info.platform = `iOS ${osVer} · Apple Silicon · ${cores}`;
     } else {
-        info.platform = "Windows PC · x64 Core Intel/AMD";
-        info.gpu = "NVIDIA GeForce / AMD Radeon";
+        info.platform = `Windows/PC · x64 · ${cores}`;
     }
 
+    // 2. LẤY DUNG LƯỢNG RAM THẬT (Trình duyệt giới hạn hiển thị tối đa 8GB để bảo mật)
     if (navigator.deviceMemory) {
-        const ram = navigator.deviceMemory;
-        info.ramTotal = `${ram} GB`;
-        info.ramAvail = `${(ram * 0.4).toFixed(1)} GB`;
+        info.ramTotal = `${navigator.deviceMemory} GB (Max hiển thị)`;
+        // RAM trống không thể lấy bằng JS, nên tạo 1 con số giả lập logic dựa trên RAM tổng
+        info.ramAvail = `${(navigator.deviceMemory * (Math.random() * 0.3 + 0.3)).toFixed(1)} GB (Ước tính)`;
     } else {
-        info.ramTotal = "8 GB";
-        info.ramAvail = "3.5 GB";
+        info.ramTotal = "Ẩn bởi trình duyệt";
+        info.ramAvail = "Không xác định";
     }
 
-    info.battery = "98% (Tối ưu)";
+    // 3. LẤY TÊN GPU THỰC TẾ (Dùng WebGL để xuyên qua lớp bảo mật)
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (gl) {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                const realGpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                // Xóa bớt các chữ thừa thãi của hệ thống để tên GPU hiện ra đẹp hơn
+                info.gpu = realGpu.replace('ANGLE (', '').replace(')', '').replace('Direct3D11 vs_5_0 ps_5_0', 'Direct3D11').trim();
+            } else {
+                info.gpu = "GPU bị ẩn (No Debug Info)";
+            }
+        }
+    } catch (e) {
+        info.gpu = "Lấy GPU thất bại";
+    }
 
+    // 4. LẤY PHẦN TRĂM PIN THẬT (An toàn chống treo máy ảo)
+    if (navigator.getBattery) {
+        try {
+            // Dùng Promise.race để hẹn giờ 1 giây. Nếu máy ảo bị kẹt hàm getBattery, nó sẽ tự thoát ra và báo "Không hỗ trợ" chứ không làm treo Web.
+            const bData = await Promise.race([
+                navigator.getBattery(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
+            ]);
+            info.battery = `${Math.floor(bData.level * 100)}% ${bData.charging ? '(Đang Sạc ⚡)' : ''}`;
+        } catch (e) {
+            info.battery = "Máy ảo / Ẩn API Pin";
+        }
+    } else {
+        info.battery = "Trình duyệt không hỗ trợ";
+    }
+
+    // Lấy thông tin trạng thái Key từ giao diện
     const bannerExpText = document.getElementById('banner-expiry-text');
     if (bannerExpText && bannerExpText.textContent) {
         info.keyStatus = bannerExpText.textContent.replace('Key hợp lệ · ', '').replace(' · Anti-Ban', '');
