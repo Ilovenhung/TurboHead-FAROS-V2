@@ -17,18 +17,24 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 30px 10px; overflow-y: auto; }
-    #dustCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
     
-    .glass-panel { display: none; background: var(--surface); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border: 1.5px solid var(--glass-border); border-radius: var(--radius-lg); padding: 26px 22px; width: 100%; max-width: 410px; box-shadow: var(--shadow-glass); margin: 4vh auto; }
+    /* FIX: Đưa Canvas lên lớp trên cùng để hạt bay đè lên cả màn hình khóa nhập MK */
+    #dustCanvas { position: fixed; inset: 0; z-index: 10001; pointer-events: none; }
+    
+    .glass-panel { display: none; position: relative; z-index: 10; background: var(--surface); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border: 1.5px solid var(--glass-border); border-radius: var(--radius-lg); padding: 26px 22px; width: 100%; max-width: 410px; box-shadow: var(--shadow-glass); margin: 4vh auto; }
     .glass-panel h2 { text-align: center; margin-bottom: 22px; font-weight: 900; font-size: 1.4rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px rgba(10,132,255,0.3); }
     
     .input-group { margin-bottom: 16px; text-align: left; }
     .input-group label { display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.2px; }
     
-    .glass-input, .glass-select { width: 100%; padding: 14px; background: rgba(0,0,0,0.35); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: all 0.3s; }
-    .glass-input:focus, .glass-select:focus { border-color: var(--ios-blue); box-shadow: 0 0 12px rgba(10,132,255,0.25); }
+    .glass-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.35); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: all 0.3s; }
+    .glass-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 12px rgba(10,132,255,0.25); }
     .glass-input::placeholder { color: rgba(255,255,255,0.3); }
     
+    .glass-select-trigger { width: 100%; padding: 14px; background: rgba(0,0,0,0.35); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 0.95rem; text-align: left; cursor: pointer; transition: all 0.3s; display: flex; justify-content: space-between; align-items: center; }
+    .glass-select-trigger:active { background: rgba(255,255,255,0.05); }
+    .glass-select-trigger::after { content: '▼'; font-size: 0.7rem; color: var(--text-secondary); }
+
     .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #0a84ff, #005bb5); border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; letter-spacing: 0.3px; }
     .btn-primary:active { transform: scale(0.97); }
     
@@ -49,12 +55,49 @@
     .key-list::-webkit-scrollbar { width: 4px; }
     .key-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
-    .auth-overlay { position: fixed; inset: 0; background: #07070d; z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 15px; background-image: radial-gradient(circle at center, rgba(10,132,255,0.05) 0%, transparent 70%); }
-    .auth-box { background: rgba(20, 20, 35, 0.6); border: 1.5px solid var(--glass-border); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 360px; box-shadow: var(--shadow-glass); text-align: center; }
-    .auth-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: 0.5px; }
+    /* FIX CSS: Giảm bớt độ blur từ 15px xuống 6px để hạt bụi phía sau ẩn hiện mượt mà hơn */
+    .auth-overlay { position: fixed; inset: 0; background: rgba(6, 6, 10, 0.8); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 15px; background-image: radial-gradient(circle at center, rgba(10,132,255,0.08) 0%, transparent 70%); }
+    .auth-box { position: relative; z-index: 10000; background: rgba(20, 20, 35, 0.6); border: 1.5px solid var(--glass-border); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 360px; box-shadow: var(--shadow-glass); text-align: center; }
+    .auth-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(10,132,255,0.25); }
     .auth-sub { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 22px; line-height: 1.4; }
     .auth-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 1.05rem; outline: none; text-align: center; letter-spacing: 3px; font-family: monospace; margin-bottom: 18px; transition: 0.2s; }
     .auth-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 15px rgba(10,132,255,0.3); }
+
+    .faros-toast {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+      background: rgba(25, 25, 45, 0.9); border: 1.5px solid var(--glass-border);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 14px 24px; border-radius: 16px; color: #fff; font-size: 0.9rem;
+      font-weight: 600; z-index: 100000; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      pointer-events: none; width: max-content; max-width: 90%;
+    }
+    .faros-toast.active { top: 30px; }
+
+    .faros-modal-overlay {
+      position: fixed; inset: 0; background: rgba(7, 7, 13, 0.6);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      z-index: 99999; display: flex; justify-content: center; align-items: center;
+      padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .faros-modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .faros-modal-box {
+      background: var(--surface); border: 1.5px solid var(--glass-border);
+      backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+      border-radius: 22px; padding: 26px 22px; width: 100%; max-width: 350px;
+      box-shadow: var(--shadow-glass); text-align: center;
+      transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+    }
+    .faros-modal-overlay.active .faros-modal-box { transform: scale(1); }
+    .faros-modal-text { font-size: 0.95rem; color: #fff; margin-bottom: 24px; line-height: 1.5; font-weight: 500; }
+    .faros-modal-btns { display: flex; gap: 12px; }
+
+    .duration-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 260px; overflow-y: auto; padding-right: 4px; margin-bottom: 18px; }
+    .duration-grid::-webkit-scrollbar { width: 4px; }
+    .duration-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    .btn-option { width: 100%; padding: 12px 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; font-size: 0.88rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+    .btn-option:active { background: var(--ios-blue); border-color: var(--ios-blue); }
   </style>
 </head>
 <body>
@@ -83,14 +126,7 @@
     <div class="input-group" style="display: flex; gap:12px;">
       <div style="flex:1.3;">
         <label>Hạn Sử Dụng (HSD):</label>
-        <select id="adminDuration" class="glass-select" style="cursor: pointer;">
-          <option value="lifetime">Vĩnh viễn</option>
-          <option value="1">1 Ngày</option>
-          <option value="3">3 Ngày</option>
-          <option value="7">7 Ngày</option>
-          <option value="15">15 Ngày</option>
-          <option value="30">30 Ngày</option>
-        </select>
+        <div id="selectDurationTrigger" class="glass-select-trigger">1 Ngày</div>
       </div>
       <div style="flex:0.7;">
         <label>Số Máy:</label>
@@ -101,14 +137,55 @@
     <button class="btn-primary" id="btnCreateKey" style="margin-top: 4px; background: linear-gradient(135deg, #0a84ff, #004094);">➕ TẠO KEY HỆ THỐNG</button>
     
     <div class="key-list" id="adminKeyList">Đang kết nối cơ sở dữ liệu...</div>
-    
-    <button class="btn-primary" style="margin-top:14px; background:transparent; border:1px solid var(--glass-border); color:var(--text-secondary); font-weight: 600;" onclick="window.location.href='nhapkeyv2.html'">🔙 Quay lại cổng chính</button>
+  </div>
+
+  <div id="farosToast" class="faros-toast"></div>
+
+  <div id="farosSelectModal" class="faros-modal-overlay">
+    <div class="faros-modal-box" style="max-width: 330px; padding: 22px 18px;">
+      <div class="faros-modal-text" style="margin-bottom: 16px; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px;">CHỌN HẠN SỬ DỤNG</div>
+      <div class="duration-grid">
+        <button class="btn-option" data-value="1">1 Ngày</button>
+        <button class="btn-option" data-value="3">3 Ngày</button>
+        <button class="btn-option" data-value="7">7 Ngày</button>
+        <button class="btn-option" data-value="15">15 Ngày</button>
+        <button class="btn-option" data-value="30">30 Ngày</button>
+        <button class="btn-option" data-value="60">60 Ngày</button>
+        <button class="btn-option" data-value="90">90 Ngày</button>
+        <button class="btn-option" data-value="lifetime" style="color: #0a84ff;">Vĩnh viễn</button>
+        <button class="btn-option" data-value="custom" style="grid-column: span 2; background: rgba(10,132,255,0.1); border-color: rgba(10,132,255,0.3); color: #0a84ff;">Tùy chỉnh ngày...</button>
+      </div>
+      <button class="btn-primary" id="btnCloseSelectModal" style="background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); color: var(--text-secondary); font-weight:600; padding: 10px;">HỦY BỎ</button>
+    </div>
+  </div>
+
+  <div id="farosConfirmModal" class="faros-modal-overlay">
+    <div class="faros-modal-box">
+      <div id="farosConfirmText" class="faros-modal-text">Nội dung xác nhận ở đây?</div>
+      <div class="faros-modal-btns">
+        <button class="btn-primary" id="btnFarosConfirmCancel" style="background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); color: var(--text-secondary); font-weight:600;">HỦY BỎ</button>
+        <button class="btn-primary" id="btnFarosConfirmOk" style="background: linear-gradient(135deg, var(--danger), #cc241b); font-weight:700;">XÁC NHẬN XÓA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="farosInputModal" class="faros-modal-overlay">
+    <div class="faros-modal-box">
+      <div class="faros-modal-text" style="margin-bottom: 14px; font-weight: 700; font-size: 1.05rem;">NHẬP SỐ NGÀY SỬ DỤNG</div>
+      <input type="number" id="farosCustomDaysInput" class="glass-input" placeholder="Ví dụ: 45, 120, 365..." min="1" style="text-align: center; font-family: monospace; font-size: 1.2rem; letter-spacing: 1px; margin-bottom: 20px;">
+      <div class="faros-modal-btns">
+        <button class="btn-primary" id="btnFarosInputCancel" style="background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); color: var(--text-secondary); font-weight:600;">HỦY</button>
+        <button class="btn-primary" id="btnFarosInputOk" style="background: linear-gradient(135deg, var(--ios-blue), #005bb5); font-weight:700;">XÁC NHẬN</button>
+      </div>
+    </div>
   </div>
 
   <script>
     const SECRET_PASSWORD = "faroswvdann_vip_ngvandanplus_crackcc3m";
     let accessGranted = false;
     let db = null;
+    let customDaysValue = null; 
+    let selectedDuration = "1"; 
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
@@ -120,6 +197,58 @@
     const btnVerify = document.getElementById('btnVerifyAuth');
 
     authInput.focus();
+
+    let toastTimer = null;
+    function showFarosToast(message) {
+      const toast = document.getElementById('farosToast');
+      toast.innerText = message;
+      toast.classList.add('active');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('active');
+      }, 2500);
+    }
+
+    let confirmCallback = null;
+    function showFarosConfirm(message, onConfirm) {
+      document.getElementById('farosConfirmText').innerText = message;
+      document.getElementById('farosConfirmModal').classList.add('active');
+      confirmCallback = onConfirm;
+    }
+
+    document.getElementById('btnFarosConfirmCancel').addEventListener('click', () => {
+      document.getElementById('farosConfirmModal').classList.remove('active');
+      confirmCallback = null;
+    });
+
+    document.getElementById('btnFarosConfirmOk').addEventListener('click', () => {
+      document.getElementById('farosConfirmModal').classList.remove('active');
+      if (typeof confirmCallback === 'function') confirmCallback();
+      confirmCallback = null;
+    });
+
+    let inputConfirmCallback = null;
+    let inputCancelCallback = null;
+    function showFarosInputModal(onConfirm, onCancel) {
+      const modal = document.getElementById('farosInputModal');
+      const input = document.getElementById('farosCustomDaysInput');
+      input.value = '';
+      modal.classList.add('active');
+      setTimeout(() => input.focus(), 150);
+      inputConfirmCallback = onConfirm;
+      inputCancelCallback = onCancel;
+    }
+
+    document.getElementById('btnFarosInputCancel').addEventListener('click', () => {
+      document.getElementById('farosInputModal').classList.remove('active');
+      if (typeof inputCancelCallback === 'function') inputCancelCallback();
+    });
+
+    document.getElementById('btnFarosInputOk').addEventListener('click', () => {
+      const val = document.getElementById('farosCustomDaysInput').value.trim();
+      document.getElementById('farosInputModal').classList.remove('active');
+      if (typeof inputConfirmCallback === 'function') inputConfirmCallback(val);
+    });
 
     authInput.addEventListener('keyup', (e) => {
       if (e.key === 'Enter') btnVerify.click();
@@ -137,18 +266,17 @@
         renderKeys();
         initAdminActions();
       } else {
-        alert("Mật khẩu mã khóa quyền không chính xác! Hãy thử lại.");
+        showFarosToast("❌ Mật khẩu truy cập sai! Hãy thử lại.");
         authInput.value = '';
         authInput.focus();
       }
     });
 
-    // HIỆU ỨNG HẠT BỤI NỀN - ĐÃ ĐƯỢC TĂNG TỐC ĐỘ DI CHUYỂN
+    // HIỆU ỨNG HẠT BỤI NỀN - TỐC ĐỘ DI CHUYỂN
     const dCanvas = document.getElementById('dustCanvas'); const dCtx = dCanvas.getContext('2d'); let particles = [];
     function resizeDust() { dCanvas.width = window.innerWidth; dCanvas.height = window.innerHeight; }
     window.addEventListener('resize', resizeDust); resizeDust();
     
-    // Tạo hạt với xung tốc độ ngẫu nhiên lớn hơn (nhân với 2.0 thay vì 0.5)
     for(let i=0; i<40; i++) particles.push({ 
       x: Math.random() * dCanvas.width, 
       y: Math.random() * dCanvas.height, 
@@ -183,6 +311,7 @@
 
     function getKeyPrefix(dur) {
       if (dur === 'lifetime') return 'FAROS-LT-';
+      if (dur === 'custom') return `FAROS-${customDaysValue || 1}D-`;
       return `FAROS-${dur}D-`;
     }
 
@@ -238,21 +367,80 @@
     }
 
     function initAdminActions() {
+      const trigger = document.getElementById('selectDurationTrigger');
+      const selectModal = document.getElementById('farosSelectModal');
+      const closeSelectModal = document.getElementById('btnCloseSelectModal');
+      const optionButtons = document.querySelectorAll('.btn-option');
+
+      trigger.addEventListener('click', () => {
+        selectModal.classList.add('active');
+      });
+
+      closeSelectModal.addEventListener('click', () => {
+        selectModal.classList.remove('active');
+      });
+
+      optionButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const val = e.target.getAttribute('data-value');
+          selectModal.classList.remove('active'); 
+
+          if (val === 'custom') {
+            showFarosInputModal((days) => {
+              let parsed = parseInt(days);
+              if (parsed && parsed > 0) {
+                customDaysValue = parsed;
+                selectedDuration = 'custom';
+                trigger.innerText = `Tùy chỉnh (${customDaysValue} Ngày)`;
+              } else {
+                showFarosToast('⚠️ Số ngày không hợp lệ!');
+                selectedDuration = '1';
+                customDaysValue = null;
+                trigger.innerText = '1 Ngày';
+              }
+            }, () => {
+              selectedDuration = '1';
+              customDaysValue = null;
+              trigger.innerText = '1 Ngày';
+            });
+          } else {
+            customDaysValue = null;
+            selectedDuration = val;
+            trigger.innerText = e.target.innerText;
+          }
+        });
+      });
+
       document.getElementById('btnRandomKey').addEventListener('click', () => {
-        const dur = document.getElementById('adminDuration').value;
-        document.getElementById('adminCustomKey').value = getKeyPrefix(dur) + makeRandomString(5);
+        if (selectedDuration === 'custom' && !customDaysValue) {
+          showFarosToast('⚠️ Hãy chọn mốc ngày tùy chỉnh trước!');
+          return;
+        }
+        document.getElementById('adminCustomKey').value = getKeyPrefix(selectedDuration) + makeRandomString(5);
       });
 
       document.getElementById('btnCreateKey').addEventListener('click', () => {
         let val = document.getElementById('adminCustomKey').value.trim();
-        const dur = document.getElementById('adminDuration').value;
         const limit = parseInt(document.getElementById('adminDevices').value) || 1;
 
-        if(!val) {
-          val = getKeyPrefix(dur) + makeRandomString(5);
+        if (selectedDuration === 'custom' && !customDaysValue) {
+          showFarosToast('⚠️ Vui lòng nhập số ngày tùy chỉnh!');
+          return;
         }
 
-        let durationDays = dur === 'lifetime' ? 'lifetime' : parseInt(dur);
+        if(!val) {
+          val = getKeyPrefix(selectedDuration) + makeRandomString(5);
+        }
+
+        let durationDays;
+        if (selectedDuration === 'lifetime') {
+          durationDays = 'lifetime';
+        } else if (selectedDuration === 'custom') {
+          durationDays = parseInt(customDaysValue);
+        } else {
+          durationDays = parseInt(selectedDuration);
+        }
+
         let nowTimestamp = Date.now();
         
         db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + val).set({ 
@@ -263,23 +451,32 @@
           devices: {},
           createdAt: nowTimestamp 
         }).then(() => {
+          showFarosToast("✅ Tạo Key hệ thống thành công!");
           document.getElementById('adminCustomKey').value = '';
         }).catch((error) => {
-          alert('Lỗi khởi tạo key mới: ' + error.message);
+          showFarosToast('❌ Lỗi khởi tạo key: ' + error.message);
         });
       });
     }
 
     window.copyKey = (code) => {
-      navigator.clipboard.writeText(code).then(() => { alert('Đã sao chép thành công key: ' + code); })
-      .catch(() => { const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); alert('Đã sao chép thành công key: ' + code); });
+      navigator.clipboard.writeText(code).then(() => { 
+        showFarosToast('📋 Đã sao chép key thành công!'); 
+      })
+      .catch(() => { 
+        const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); 
+        showFarosToast('📋 Đã sao chép key thành công!'); 
+      });
     };
 
     window.deleteKey = (code) => { 
         if(!accessGranted || !db) return;
-        if(confirm('Bạn thực sự muốn thu hồi / xóa bỏ key này khỏi máy chủ: ' + code + '?')) {
-            db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + code).remove(); 
-        }
+        
+        showFarosConfirm(`Bạn thực sự muốn xóa bỏ hoàn toàn key này khỏi máy chủ?`, () => {
+            db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + code).remove().then(() => {
+                showFarosToast('🗑️ Thu hồi Key thành công!');
+            });
+        });
     };
   </script>
 </body>
