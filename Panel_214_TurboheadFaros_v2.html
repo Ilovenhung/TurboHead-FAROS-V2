@@ -1117,11 +1117,10 @@ function updateDashboardUI(keyVal, keyData) {
     let expiresAt = null;
     let keyTypeText = "";
 
-    // [FIXED] Sửa lỗi lưu bộ đệm Key cũ: Kiểm tra xem key vừa nhập có khác với key trước đó không.
+    // Xử lý bộ đệm thời gian
     let loginTime = localStorage.getItem('faros_login_timestamp');
     let lastKey = localStorage.getItem('faros_last_checked_key');
 
-    // Nếu không có mốc thời gian, HOẶC người dùng nhập 1 key hoàn toàn mới -> Reset lại mốc tính thời gian
     if (!loginTime || isNaN(Number(loginTime)) || lastKey !== keyVal) {
         loginTime = Date.now();
         localStorage.setItem('faros_login_timestamp', loginTime);
@@ -1130,18 +1129,28 @@ function updateDashboardUI(keyVal, keyData) {
         loginTime = Number(loginTime);
     }
 
-    if (keyUpper.includes('1D')) { expiresAt = loginTime + (1 * 86400000); keyTypeText = "1 Ngày"; } 
-    else if (keyUpper.includes('3D')) { expiresAt = loginTime + (3 * 86400000); keyTypeText = "3 Ngày"; }
-    else if (keyUpper.includes('7D')) { expiresAt = loginTime + (7 * 86400000); keyTypeText = "7 Ngày"; } 
-    else if (keyUpper.includes('15D')) { expiresAt = loginTime + (15 * 86400000); keyTypeText = "15 Ngày"; }
-    else if (keyUpper.includes('30D') || keyUpper.includes('1M')) { expiresAt = loginTime + (30 * 86400000); keyTypeText = "30 Ngày"; }
+    // [BẢN FIX] BỘ QUÉT TỰ ĐỘNG SỐ NGÀY TỪ TÊN KEY (Ví dụ: FAROS-2D-XXX, FAROS-60D-XXX)
+    const dayMatch = keyUpper.match(/-(\d+)D-/);
+
+    if (dayMatch) {
+        // Tự động lấy con số nằm trước chữ D (2, 60, 90, v.v.)
+        const days = parseInt(dayMatch[1]);
+        expiresAt = loginTime + (days * 86400000); // 1 ngày = 86400000 ms
+        keyTypeText = `${days} Ngày`;
+    } 
+    else if (keyUpper.includes('-1M-')) { 
+        expiresAt = loginTime + (30 * 86400000); 
+        keyTypeText = "30 Ngày"; 
+    }
     else {
+        // NẾU LÀ KEY VĨNH VIỄN (FAROS-LT-XXX) HOẶC KHÔNG CÓ NGÀY
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
         if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
+    // XỬ LÝ HIỂN THỊ ĐẾM LÙI THỜI GIAN
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
