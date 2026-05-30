@@ -953,7 +953,9 @@ const firebaseConfig = {
 let db = null;
 let firebaseReady = false;
 try {
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     db = firebase.database();
     firebaseReady = true;
 } catch(e) {
@@ -1050,7 +1052,7 @@ function showToast(msg, icon='fa-circle-check', color='#60a5fa'){
     if(!w) return;
     const t = document.createElement('div');
     t.className = 'toast';
-    t.innerHTML = `<i class="fa-solid ${icon}" style="color:${color}"></i>${msg}`;
+    t.innerHTML = `<i class="fa-solid ${icon}" style="color:${color}"></i> ${msg}`;
     w.appendChild(t);
     setTimeout(()=>{ if(t.parentElement) t.remove(); }, 3200);
 }
@@ -1079,7 +1081,7 @@ setInterval(()=>{
 }, 3500);
 
 /* ════════════════════════════════════════════════
-   SESSION TIMER
+   SESSION TIMER (ĐỒNG HỒ HỆ THỐNG REAL-TIME)
 ════════════════════════════════════════════════ */
 function startRealTimeClock() {
     const timerDisplay = document.getElementById('session-timer');
@@ -1117,7 +1119,7 @@ function updateDashboardUI(keyVal, keyData) {
     let expiresAt = null;
     let keyTypeText = "";
 
-    // Xử lý bộ đệm thời gian
+    // Xử lý bộ đệm thời gian kích hoạt của thiết bị
     let loginTime = localStorage.getItem('faros_login_timestamp');
     let lastKey = localStorage.getItem('faros_last_checked_key');
 
@@ -1129,13 +1131,12 @@ function updateDashboardUI(keyVal, keyData) {
         loginTime = Number(loginTime);
     }
 
-    // [BẢN FIX] BỘ QUÉT TỰ ĐỘNG SỐ NGÀY TỪ TÊN KEY (Ví dụ: FAROS-2D-XXX, FAROS-60D-XXX)
+    // BỘ QUÉT TỰ ĐỘNG SỐ NGÀY TỪ ĐỊNH DẠNG TÊN KEY (Ví dụ: FAROS-2D-XXX, FAROS-60D-XXX)
     const dayMatch = keyUpper.match(/-(\d+)D-/);
 
     if (dayMatch) {
-        // Tự động lấy con số nằm trước chữ D (2, 60, 90, v.v.)
         const days = parseInt(dayMatch[1]);
-        expiresAt = loginTime + (days * 86400000); // 1 ngày = 86400000 ms
+        expiresAt = loginTime + (days * 86400000); 
         keyTypeText = `${days} Ngày`;
     } 
     else if (keyUpper.includes('-1M-')) { 
@@ -1143,14 +1144,13 @@ function updateDashboardUI(keyVal, keyData) {
         keyTypeText = "30 Ngày"; 
     }
     else {
-        // NẾU LÀ KEY VĨNH VIỄN (FAROS-LT-XXX) HOẶC KHÔNG CÓ NGÀY
+        // TRƯỜNG HỢP KEY VĨNH VIỄN (Ví dụ: FAROS-LT-XXX) HOẶC KHÔNG PHÙ HỢP CÁC KÝ TỰ TRÊN
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
-        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // XỬ LÝ HIỂN THỊ ĐẾM LÙI THỜI GIAN
+    // XỬ LÝ TIẾN TRÌNH ĐẾM LÙI THỜI GIAN CHUẨN ĐẸP
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
@@ -1181,14 +1181,13 @@ function updateDashboardUI(keyVal, keyData) {
         renderCountdown();
         licenseTimerInterval = setInterval(renderCountdown, 1000);
     } else {
-        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Lỗi</span>`;
+        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Đã hết hạn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Trạng thái key không hợp lệ';
-        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
     }
 }
 
 /* ════════════════════════════════════════════════
-   LOGIN LOGIC & CHỨC NĂNG WATCHDOG (ĐÁ RA NGOÀI KHI XÓA KEY)
+   LOGIN LOGIC & CHỨC NĂNG WATCHDOG (GIÁM SÁT AN TOÀN)
 ════════════════════════════════════════════════ */
 async function checkAutoLogin() {
     let savedKey = localStorage.getItem(LS_KEY);
@@ -1210,7 +1209,7 @@ async function checkAutoLogin() {
     }
 }
 
-// [TÍNH NĂNG MỚI] - Watchdog giám sát key ngầm: Tự động đá ra trang nhập key nếu key bị xóa khỏi bộ nhớ
+// Watchdog kiểm tra ngầm: Đẩy ngược về trang đăng nhập lập tức nếu người dùng can thiệp xóa dữ liệu LocalStorage
 setInterval(() => {
     const currentURL = window.location.href.toLowerCase();
     const isLoginPage = currentURL.includes('nhapkey') || currentURL.includes('login');
@@ -1219,15 +1218,14 @@ setInterval(() => {
         let currentSavedKey = localStorage.getItem(LS_KEY);
         let currentSavedData = localStorage.getItem(LS_KEYDATA);
         
-        // Nếu 1 trong 2 dữ liệu bị mất -> Đá ngay lập tức về trang nhập key
         if (!currentSavedKey || !currentSavedData) {
             window.location.href = 'nhapkeyv2.html';
         }
     }
-}, 1500); // Check liên tục mỗi 1.5 giây
+}, 1500);
 
 /* ════════════════════════════════════════════════
-   HỆ THỐNG KHỞI CHẠY GAME
+   HỆ THỐNG KHỞI CHẠY GAME GARENA
 ════════════════════════════════════════════════ */
 function launchGame(type) {
     try { initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
@@ -1419,10 +1417,9 @@ async function getRealHardwareInfo() {
     };
 
     const ua = navigator.userAgent;
-
-    // 1. LẤY HỆ ĐIỀU HÀNH VÀ PHIÊN BẢN THẬT (Bóc tách từ User-Agent)
     const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} Cores` : "Unknown Cores";
     let osVer = "";
+
     if (/android/i.test(ua)) {
         const match = ua.match(/Android\s([0-9\.]+)/);
         osVer = match ? match[1] : "Unknown";
@@ -1435,17 +1432,14 @@ async function getRealHardwareInfo() {
         info.platform = `Windows/PC · x64 · ${cores}`;
     }
 
-    // 2. LẤY DUNG LƯỢNG RAM THẬT (Trình duyệt giới hạn hiển thị tối đa 8GB để bảo mật)
     if (navigator.deviceMemory) {
         info.ramTotal = `${navigator.deviceMemory} GB (Max hiển thị)`;
-        // RAM trống không thể lấy bằng JS, nên tạo 1 con số giả lập logic dựa trên RAM tổng
         info.ramAvail = `${(navigator.deviceMemory * (Math.random() * 0.3 + 0.3)).toFixed(1)} GB (Ước tính)`;
     } else {
         info.ramTotal = "Ẩn bởi trình duyệt";
         info.ramAvail = "Không xác định";
     }
 
-    // 3. LẤY TÊN GPU THỰC TẾ (Dùng WebGL để xuyên qua lớp bảo mật)
     try {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -1453,7 +1447,6 @@ async function getRealHardwareInfo() {
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
             if (debugInfo) {
                 const realGpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                // Xóa bớt các chữ thừa thãi của hệ thống để tên GPU hiện ra đẹp hơn
                 info.gpu = realGpu.replace('ANGLE (', '').replace(')', '').replace('Direct3D11 vs_5_0 ps_5_0', 'Direct3D11').trim();
             } else {
                 info.gpu = "GPU bị ẩn (No Debug Info)";
@@ -1463,10 +1456,8 @@ async function getRealHardwareInfo() {
         info.gpu = "Lấy GPU thất bại";
     }
 
-    // 4. LẤY PHẦN TRĂM PIN THẬT (An toàn chống treo máy ảo)
     if (navigator.getBattery) {
         try {
-            // Dùng Promise.race để hẹn giờ 1 giây. Nếu máy ảo bị kẹt hàm getBattery, nó sẽ tự thoát ra và báo "Không hỗ trợ" chứ không làm treo Web.
             const bData = await Promise.race([
                 navigator.getBattery(),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
@@ -1479,7 +1470,6 @@ async function getRealHardwareInfo() {
         info.battery = "Trình duyệt không hỗ trợ";
     }
 
-    // Lấy thông tin trạng thái Key từ giao diện
     const bannerExpText = document.getElementById('banner-expiry-text');
     if (bannerExpText && bannerExpText.textContent) {
         info.keyStatus = bannerExpText.textContent.replace('Key hợp lệ · ', '').replace(' · Anti-Ban', '');
@@ -1506,6 +1496,7 @@ const ALL_GUNS = [
 function addLine(html,delay){
     mt(()=>{
         const o=document.getElementById('terminal-output');
+        if(!o) return;
         const d=document.createElement('div'); d.className='term-line'; d.innerHTML=html;
         o.appendChild(d); o.scrollTop=o.scrollHeight;
         playFarosSound(1200, 'sine', 0.02);
@@ -1515,6 +1506,7 @@ function addLine(html,delay){
 function addProg(id,label,delay,fillDelay){
     mt(()=>{
         const o=document.getElementById('terminal-output');
+        if(!o) return;
         const w=document.createElement('div'); w.className='term-prog-wrap';
         w.innerHTML=`<div class="term-line"><span class="tc-pfx">▶</span> <span class="tc-cyan">${label}</span></div><div class="term-prog-bar"><div class="term-prog-fill" id="${id}"></div></div>`;
         o.appendChild(w); o.scrollTop=o.scrollHeight;
@@ -1538,23 +1530,27 @@ async function runModule(){
     const lb=document.getElementById('run-label');
     const tBox=document.getElementById('terminal-box');
     const tOut=document.getElementById('terminal-output');
-    btn.classList.add('running'); ic.className='fa-solid fa-stop'; lb.textContent='Dừng Module';
-    tBox.classList.add('open'); tOut.innerHTML='';
+    
+    if(btn) btn.classList.add('running'); 
+    if(ic) ic.className='fa-solid fa-stop'; 
+    if(lb) lb.textContent='Dừng Module';
+    if(tBox) tBox.classList.add('open'); 
+    if(tOut) tOut.innerHTML='';
 
     const hw = await getRealHardwareInfo();
     const randomTemp = Math.floor(Math.random() * 6) + 36; 
 
     let d=0; const I=210;
-    addLine(`<span class="tc-pfx">$</span><span class="tc-blue"> TurboHead FAROS</span> <span class="tc-dim">--inject --vip --build=2026</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">$</span> <span class="tc-blue">TurboHead FAROS</span> <span class="tc-dim">--inject --vip --build=2026</span>`,d); d+=I;
     addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[BOOT]</span> <span class="tc-cyan"> Khởi động TurboHead FAROS v2.0...</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Platform  : ${hw.platform}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> RAM       : ${hw.ramTotal} · Available: ${hw.ramAvail}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> GPU       : ${hw.gpu}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht"> Temp      : ${randomTemp}°C · Battery: ${hw.battery}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp"> Key Status: ✓ VALID · ${hw.keyStatus} · TurboHead FAROS Verified</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[BOOT]</span> <span class="tc-cyan">Khởi động TurboHead FAROS v2.0...</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht">Platform  : ${hw.platform}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht">RAM       : ${hw.ramTotal} · Available: ${hw.ramAvail}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht">GPU       : ${hw.gpu}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[SYS]</span>  <span class="tc-wht">Temp      : ${randomTemp}°C · Battery: ${hw.battery}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[VIP]</span>  <span class="tc-prp">Key Status: ✓ VALID · ${hw.keyStatus} · TurboHead FAROS Verified</span>`,d); d+=I;
     addProg('p-init','Khởi tạo kernel module VIP...',d,d+180); d+=I*2.2;
-    addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn"> ✓ Module VIP loaded — OK</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[OK]</span>   <span class="tc-grn">✓ Module VIP loaded — OK</span>`,d); d+=I;
 
     addLine(`<span class="tc-dim">──── THỐNG KÊ TỪNG SÚNG ──────────────────</span>`,d); d+=I;
     ALL_GUNS.forEach((g,i)=>{
@@ -1566,22 +1562,22 @@ async function runModule(){
 
     addLine(`<span class="tc-dim">──── KẾT QUẢ INJECT VIP ────────────────────</span>`,d); d+=I;
     ALL_GUNS.forEach((g,i)=>{
-        addLine(`<span class="tc-pfx">  ✓</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn"> ✓ PATCHED</span> <span class="tc-prp"> ✓ OPTIMIZED</span> <span class="tc-ylw"> ✓ VIP</span>`, d+i*(I*.5));
+        addLine(`<span class="tc-pfx">  ✓</span> <span class="gun-chip ${g.cls}">${g.emoji} ${g.name}</span> <span class="tc-grn">✓ PATCHED</span> <span class="tc-prp">✓ OPTIMIZED</span> <span class="tc-ylw">✓ VIP</span>`, d+i*(I*.5));
     });
     d += ALL_GUNS.length*(I*.5)+I;
 
     addLine(`<span class="tc-dim">════════════════════════════════════════════</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[DONE]</span> <span class="tc-grn"> ✓ TurboHead FAROS V2 — HOẠT ĐỘNG!</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-prp"> Tỉ lệ Headshot dự kiến  : 88%+</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-cyan"> Số súng được patch      : ${ALL_GUNS.length}</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-ylw"> Chế độ                   : VIP TURBOHEAD VERIFIED</span>`,d); d+=I;
-    addLine(`<span class="tc-pfx">$</span><span class="tc-dim"> _</span><span class="blink-cur"></span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[DONE]</span> <span class="tc-grn">✓ TurboHead FAROS V2 — HOẠT ĐỘNG!</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-prp">Tỉ lệ Headshot dự kiến  : 88%+</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-cyan">Số súng được patch      : ${ALL_GUNS.length}</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">[INFO]</span> <span class="tc-ylw">Chế độ                   : VIP TURBOHEAD VERIFIED</span>`,d); d+=I;
+    addLine(`<span class="tc-pfx">$</span> <span class="tc-dim">_</span><span class="blink-cur"></span>`,d); d+=I;
 
     mt(()=>{
         modRunning = false;
-        btn.classList.remove('running');
-        ic.className = 'fa-solid fa-rotate-right'; 
-        lb.textContent = 'Chạy Lại';
+        if(btn) btn.classList.remove('running');
+        if(ic) ic.className = 'fa-solid fa-rotate-right'; 
+        if(lb) lb.textContent = 'Chạy Lại';
         
         const gameLauncherBox = document.getElementById('game-launcher-box');
         if (gameLauncherBox) {
@@ -1601,14 +1597,17 @@ function stopModule() {
     playFarosSound(300, 'sawtooth', 0.25);
 
     const btn = document.getElementById('btn-run');
-    if(!btn) return;
-    btn.classList.remove('running');
-    document.getElementById('run-icon').className='fa-solid fa-play';
-    document.getElementById('run-label').textContent='Chạy Module';
+    if(btn) btn.classList.remove('running');
+    
+    const ic = document.getElementById('run-icon');
+    const lb = document.getElementById('run-label');
+    if(ic) ic.className='fa-solid fa-play';
+    if(lb) lb.textContent='Chạy Module';
+    
     const o=document.getElementById('terminal-output');
     if(!o) return;
     const el=document.createElement('div'); el.className='term-line';
-    el.innerHTML=`<span class="tc-pfx">[STOP]</span> <span class="tc-red"> ⚠ Module bị dừng bởi người dùng.</span>`;
+    el.innerHTML=`<span class="tc-pfx">[STOP]</span> <span class="tc-red">⚠ Module bị dừng bởi người dùng.</span>`;
     o.appendChild(el); o.scrollTop=o.scrollHeight;
     showToast('Module đã dừng','fa-circle-stop','#ef4444');
 }
@@ -1642,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ════════════════════════════════════════════════
-   KHỞI ĐỘNG APP
+   KHỞI ĐỘNG HỆ THỐNG PANEL
 ════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
     startRealTimeClock(); 
