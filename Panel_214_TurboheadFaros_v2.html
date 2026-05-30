@@ -1119,7 +1119,6 @@ function updateDashboardUI(keyVal, keyData) {
     let expiresAt = null;
     let keyTypeText = "";
 
-    // Xử lý bộ đệm thời gian kích hoạt của thiết bị
     let loginTime = localStorage.getItem('faros_login_timestamp');
     let lastKey = localStorage.getItem('faros_last_checked_key');
 
@@ -1131,26 +1130,34 @@ function updateDashboardUI(keyVal, keyData) {
         loginTime = Number(loginTime);
     }
 
-    // BỘ QUÉT TỰ ĐỘNG SỐ NGÀY TỪ ĐỊNH DẠNG TÊN KEY (Ví dụ: FAROS-2D-XXX, FAROS-60D-XXX)
+    // BỘ QUÉT TỰ ĐỘNG ĐỌC NGÀY / GIỜ / PHÚT TỪ TÊN MÃ KEY
     const dayMatch = keyUpper.match(/-(\d+)D-/);
+    const hourMatch = keyUpper.match(/-(\d+)H-/);
+    const minMatch = keyUpper.match(/-(\d+)MIN-/);
 
     if (dayMatch) {
         const days = parseInt(dayMatch[1]);
         expiresAt = loginTime + (days * 86400000); 
         keyTypeText = `${days} Ngày`;
     } 
-    else if (keyUpper.includes('-1M-')) { 
-        expiresAt = loginTime + (30 * 86400000); 
-        keyTypeText = "30 Ngày"; 
+    else if (hourMatch) {
+        const hours = parseInt(hourMatch[1]);
+        expiresAt = loginTime + (hours * 3600000); 
+        keyTypeText = `${hours} Giờ`;
+    }
+    else if (minMatch) {
+        const mins = parseInt(minMatch[1]);
+        expiresAt = loginTime + (mins * 60000); 
+        keyTypeText = `${mins} Phút`;
     }
     else {
-        // TRƯỜNG HỢP KEY VĨNH VIỄN (Ví dụ: FAROS-LT-XXX) HOẶC KHÔNG PHÙ HỢP CÁC KÝ TỰ TRÊN
+        // VĨNH VIỄN
         licenseDisplay.innerHTML = `<span style="color:#30d158;"><i class="fa-solid fa-infinity"></i> Vĩnh viễn</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Key hợp lệ · Vĩnh viễn · Anti-Ban';
+        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
         return;
     }
 
-    // XỬ LÝ TIẾN TRÌNH ĐẾM LÙI THỜI GIAN CHUẨN ĐẸP
     if (expiresAt && expiresAt > Date.now()) {
         const renderCountdown = () => {
             const diff = expiresAt - Date.now();
@@ -1181,8 +1188,9 @@ function updateDashboardUI(keyVal, keyData) {
         renderCountdown();
         licenseTimerInterval = setInterval(renderCountdown, 1000);
     } else {
-        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Đã hết hạn</span>`;
+        licenseDisplay.innerHTML = `<span style="color:#ff453a;">Hết hạn / Lỗi</span>`;
         if (bannerExpText) bannerExpText.textContent = 'Trạng thái key không hợp lệ';
+        if (licenseTimerInterval) clearInterval(licenseTimerInterval);
     }
 }
 
