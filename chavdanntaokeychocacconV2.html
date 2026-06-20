@@ -358,21 +358,25 @@
       return `${hours}:${minutes} - ${day}/${month}/${date.getFullYear()}`;
     }
 
-    function renderKeys() {
+        function renderKeys() {
       if(!accessGranted || !db) return;
       db.ref('Keys_farosWvdann_secure_x367_369_36_67').on('value', (snap) => {
         const list = document.getElementById('adminKeyList'); list.innerHTML = '';
         const data = snap.val();
         if(!data) { list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.85rem;">Chưa có key nào tồn tại trên máy chủ.</div>'; return; }
         
-        const keyArray = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        // SỬA LỖI: Lấy chính xác ID Node của Firebase để xóa không bị trượt
+        const keyArray = Object.entries(data).map(([nodeId, k]) => {
+            return { ...k, firebaseNodeId: nodeId };
+        }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         keyArray.forEach(k => {
           let dev = k.devices ? Object.keys(k.devices).length : 0;
           let statusHtml = '';
           
-                    let durStr = k.durationDays;
-          let textDur = 'Không rõ';
+          let durStr = k.durationDays;
+          let textDur = 'Không rõ (Key Cũ)'; // Sửa lỗi báo undefined
+
           if (durStr === 'lifetime') textDur = 'Vĩnh viễn';
           else if (typeof durStr === 'number' || (typeof durStr === 'string' && !isNaN(durStr) && durStr.trim() !== '')) textDur = `${durStr} Ngày`;
           else if (typeof durStr === 'string') {
@@ -380,7 +384,6 @@
             else if (durStr.includes('H')) textDur = `${durStr.replace('H', '')} Giờ`;
             else if (durStr.includes('D')) textDur = `${durStr.replace('D', '')} Ngày`;
           }
-
 
           if (durStr === 'lifetime') {
             statusHtml = '<span style="color: #0a84ff; font-weight:700;">Vĩnh viễn</span>';
@@ -397,17 +400,29 @@
           list.innerHTML += `
             <div class="key-item">
               <div class="key-info" style="flex:1; min-width: 0;">
-                <span>${k.code}</span>
-                <div class="key-details">${dev}/${k.limit} Máy sử dụng • HSD: ${statusHtml}</div>
+                <span>${k.code || k.firebaseNodeId}</span>
+                <div class="key-details">${dev}/${k.limit || 1} Máy sử dụng • HSD: ${statusHtml}</div>
               </div>
               <div class="action-btns">
-                <button class="btn-copy" onclick="copyKey('${k.code}')">COPY</button>
-                <button class="btn-delete" onclick="deleteKey('${k.code}')">XÓA</button>
+                <button class="btn-copy" onclick="copyKey('${k.code || k.firebaseNodeId}')">COPY</button>
+                <button class="btn-delete" onclick="deleteKey('${k.firebaseNodeId}')">XÓA</button>
               </div>
             </div>`;
         });
       });
     }
+
+    // SỬA LỖI HÀM XÓA: Xóa dựa trên Node ID thực tế của Firebase
+    window.deleteKey = (nodeId) => { 
+        if(!accessGranted || !db) return;
+        showFarosConfirm(`Bạn thực sự muốn xóa bỏ hoàn toàn key này khỏi máy chủ?`, () => {
+            db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + nodeId).remove().then(() => {
+                showFarosToast('🗑️ Thu hồi Key thành công!');
+            }).catch(err => {
+                showFarosToast('❌ Lỗi: Không thể xóa! ' + err.message);
+            });
+        });
+    };
 
     function initAdminActions() {
       const trigger = document.getElementById('selectDurationTrigger');
