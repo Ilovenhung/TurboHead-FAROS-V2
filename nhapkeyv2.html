@@ -316,7 +316,7 @@
     </div>
   </div>
 
-  <script>
+    <script>
     const firebaseConfig = {
       apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
       databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com"
@@ -324,62 +324,56 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- LOGIC ĐIỀU KHIỂN HAI MODAL RIÊNG BIỆT ---
-const customPromptModal = document.getElementById('customPromptModal');
-const getKeyModal = document.getElementById('getKeyModal');
-const modalPasswordInput = document.getElementById('modalPasswordInput');
+    // --- LOGIC ĐIỀU KHIỂN CÁC MODAL HỆ THỐNG ---
+    const customPromptModal = document.getElementById('customPromptModal');
+    const getKeyModal = document.getElementById('getKeyModal');
+    const modalPasswordInput = document.getElementById('modalPasswordInput');
 
-// Mở - Đóng Modal "Bạn không có key ?"
-document.getElementById('btnOpenPrompt').addEventListener('click', () => {
-  customPromptModal.classList.add('active');
-  modalPasswordInput.value = '';
-});
-document.getElementById('btnCancelPrompt').addEventListener('click', () => {
-  customPromptModal.classList.remove('active');
-});
+    // Mở - Đóng Modal "Bạn không có key ?"
+    document.getElementById('btnOpenPrompt').addEventListener('click', () => {
+      customPromptModal.classList.add('active');
+      modalPasswordInput.value = '';
+      modalPasswordInput.focus();
+    });
+    document.getElementById('btnCancelPrompt').addEventListener('click', () => {
+      customPromptModal.classList.remove('active');
+    });
 
-// Xử lý xác nhận nhập mã mật khẩu admin công khai
-document.getElementById('btnConfirmPrompt').addEventListener('click', () => {
-  const pwd = modalPasswordInput.value.trim();
-  if (pwd === 'vdanndzcute') {
-    customPromptModal.classList.remove('active');
-    window.location.href = 'https://zalo.me/0389148483';
-  } else {
-    alert("Mã xác nhận không chính xác! Vui lòng kiểm tra lại.");
-  }
-});
+    // Xử lý xác nhận nhập mã mật khẩu admin công khai
+    document.getElementById('btnConfirmPrompt').addEventListener('click', () => {
+      const pwd = modalPasswordInput.value.trim();
+      if (pwd === 'vdanndzcute') {
+        customPromptModal.classList.remove('active');
+        window.location.href = 'https://zalo.me/0389148483';
+      } else {
+        alert("Mã xác nhận không chính xác! Vui lòng kiểm tra lại.");
+      }
+    });
 
-// Mở - Đóng Modal "Get Key"
-document.getElementById('btnOpenGetKey').addEventListener('click', () => {
-  getKeyModal.classList.add('active');
-});
-document.getElementById('btnCancelGetKey').addEventListener('click', () => {
-  getKeyModal.classList.remove('active');
-});
+    // Mở - Đóng Modal "Get Key"
+    document.getElementById('btnOpenGetKey').addEventListener('click', () => {
+      getKeyModal.classList.add('active');
+    });
+    document.getElementById('btnCancelGetKey').addEventListener('click', () => {
+      getKeyModal.classList.remove('active');
+    });
 
-// Xử lý chuyển hướng rút gọn link kiếm tiền thông minh
-document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
-  getKeyModal.classList.remove('active');
-  
-  // 1. Tự động lấy link hiện tại và chuyển hướng sang file keydaget.html kèm theo mã khóa bí mật (?pass=true)
-  let currentPath = window.location.href.split('?')[0]; // Xóa các tham số cũ nếu có
-  let destinationUrl = currentPath.replace('nhapkeyv2.html', 'keydaget.html');
-  
-  // Đảm bảo link đích phải là trang keydaget
-  if (!destinationUrl.includes('keydaget.html')) {
-     destinationUrl += 'keydaget.html';
-  }
-  
-  // Thêm chìa khóa ?pass=true để trang keydaget.html biết là đã vượt link thành công
-  destinationUrl += '?pass=true';
-  
-  let encodedUrl = encodeURIComponent(destinationUrl);
-  
-  // 2. Chuyển hướng sang TapLayMa với Token API của bạn
-  let tapLayMaLink = `https://api.taplayma.com/st?token=28afb061-cd33-4178-98e5-161f3f88e996&url=${encodedUrl}`;
-  window.open(tapLayMaLink, '_blank');
-});
-
+    // Xử lý chuyển hướng rút gọn link kiếm tiền thông minh
+    document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
+      getKeyModal.classList.remove('active');
+      
+      let currentPath = window.location.href.split('?')[0]; 
+      let destinationUrl = currentPath.replace('nhapkeyv2.html', 'keydaget.html');
+      
+      if (!destinationUrl.includes('keydaget.html')) {
+         destinationUrl += 'keydaget.html';
+      }
+      destinationUrl += '?pass=true';
+      
+      let encodedUrl = encodeURIComponent(destinationUrl);
+      let tapLayMaLink = `https://api.taplayma.com/st?token=28afb061-cd33-4178-98e5-161f3f88e996&url=${encodedUrl}`;
+      window.open(tapLayMaLink, '_blank');
+    });
 
     // Hiệu ứng bụi nền mượt mà
     const dCanvas = document.getElementById('dustCanvas'); const dCtx = dCanvas.getContext('2d'); let particles = [];
@@ -405,17 +399,6 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
       errorModal.classList.remove('active');
     });
 
-    // Tự động kiểm tra phiên đăng nhập cũ
-    const savedKey = localStorage.getItem('savedLoginKey');
-    const rememberMeChecked = localStorage.getItem('rememberMe') === 'true';
-
-    if (rememberMeChecked && savedKey) {
-      document.getElementById('loginKeyInput').value = savedKey;
-      document.getElementById('rememberMeCheckbox').checked = true;
-      document.getElementById('btnLogin').innerText = 'ĐANG TỰ ĐỘNG ĐĂNG NHẬP...';
-      validateKey(savedKey, true);
-    }
-
     // Hàm xác thực Key kết nối thẳng tới ngách bảo mật mới
     function validateKey(inputKey, isAutoLogin = false) {
       db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + inputKey).once('value', (snapshot) => {
@@ -426,7 +409,6 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
         }
         let keyData = snapshot.val();
         
-        // ĐỒNG BỘ: Chấp nhận cả biến .expiresAt (mới) lẫn .expire (cũ) từ Firebase
         const expiresAt = keyData.expiresAt || keyData.expire || null;
         
         if(expiresAt && Date.now() > expiresAt) { 
@@ -445,7 +427,6 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
           }
         }
         
-        // ĐÓNG GÓI DỮ LIỆU ĐỂ BẮN SANG FILE Panel_214_TurboheadFaros_v2.html
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('faros_current_key', inputKey);
         
@@ -455,7 +436,6 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
         };
         localStorage.setItem('faros_key_data', JSON.stringify(dataToTransfer));
         
-        // CHUYỂN HƯỚNG SANG FILE PANEL MỚI CỦA BẠN CHÍNH XÁC
         window.location.href = 'Panel_214_TurboheadFaros_v2.html'; 
       }).catch((error) => {
         showError('Lỗi kết nối cơ sở dữ liệu: ' + error.message);
@@ -474,33 +454,34 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
       document.getElementById('btnLogin').innerText = 'ĐĂNG NHẬP HỆ THỐNG';
     }
 
-    // ========================================================
-    // LOGIC ĐIỀU KHIỂN HỘP THOẠI MODAL SANG XỊN MỊN MỚI
-    // ========================================================
-    const modalOverlay = document.getElementById('customPromptModal');
-    const modalInput = document.getElementById('modalPasswordInput');
+    // Tự động kiểm tra phiên đăng nhập cũ (Đặt xuống dưới để tránh lỗi bất đồng bộ)
+    const savedKey = localStorage.getItem('savedLoginKey');
+    const rememberMeChecked = localStorage.getItem('rememberMe') === 'true';
 
-    // Mở Modal khi click "Bạn không có Key?"
-    document.getElementById('linkToAdmin').addEventListener('click', () => {
-      modalInput.value = ''; // Reset input cũ
-      modalOverlay.classList.add('active');
-      modalInput.focus();
-    });
+    if (rememberMeChecked && savedKey) {
+      document.getElementById('loginKeyInput').value = savedKey;
+      document.getElementById('rememberMeCheckbox').checked = true;
+      document.getElementById('btnLogin').innerText = 'ĐANG TỰ ĐỘNG ĐĂNG NHẬP...';
+      validateKey(savedKey, true);
+    }
 
-    // Đóng khi ấn nút Hủy
-    document.getElementById('btnModalCancel').addEventListener('click', () => {
-      modalOverlay.classList.remove('active');
-    });
-
-    // Xác nhận mật khẩu trong Modal
-    document.getElementById('btnModalConfirm').addEventListener('click', () => {
-      const pw = modalInput.value.trim();
-      if(pw === 'vdanndzcute') { 
-        modalOverlay.classList.remove('active');
-        window.location.href = 'https://zalo.me/0389148483';
+    // Nhấn nút Đăng nhập thủ công
+    document.getElementById('btnLogin').addEventListener('click', () => {
+      const inputKey = document.getElementById('loginKeyInput').value.trim();
+      const isRemember = document.getElementById('rememberMeCheckbox').checked;
+      
+      if(!inputKey) { showError('Vui lòng điền mã Key kích hoạt!'); return; }
+      document.getElementById('btnLogin').innerText = 'ĐANG KIỂM TRA...';
+      
+      if(isRemember) {
+        localStorage.setItem('savedLoginKey', inputKey);
+        localStorage.setItem('rememberMe', 'true');
       } else {
-        showError("Mã xác nhận nhập vào không chính xác! Vui lòng kiểm tra lại.");
+        localStorage.removeItem('savedLoginKey');
+        localStorage.removeItem('rememberMe');
       }
+      
+      validateKey(inputKey, false);
     });
 
     // BỔ SUNG SỰ KIỆN CHẶN CHUỘT PHẢI / CÁC PHÍM TẮT COPY TRÊN MÁY TÍNH
