@@ -503,25 +503,6 @@ document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
       }
     });
 
-    // Nhấn nút Đăng nhập thủ công
-    document.getElementById('btnLogin').addEventListener('click', () => {
-      const inputKey = document.getElementById('loginKeyInput').value.trim();
-      const isRemember = document.getElementById('rememberMeCheckbox').checked;
-      
-      if(!inputKey) { showError('Vui lòng điền mã Key kích hoạt!'); return; }
-      document.getElementById('btnLogin').innerText = 'ĐANG KIỂM TRA...';
-      
-      if(isRemember) {
-        localStorage.setItem('savedLoginKey', inputKey);
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('savedLoginKey');
-        localStorage.removeItem('rememberMe');
-      }
-      
-      validateKey(inputKey, false);
-    });
-
     // BỔ SUNG SỰ KIỆN CHẶN CHUỘT PHẢI / CÁC PHÍM TẮT COPY TRÊN MÁY TÍNH
     document.addEventListener('contextmenu', event => {
       if (event.target.tagName !== 'INPUT') {
