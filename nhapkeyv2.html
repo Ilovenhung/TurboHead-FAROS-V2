@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Đăng Nhập • FAROS SYSTEM</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
     :root {
       --bg: #0b0b14; --surface: rgba(20, 20, 38, 0.85); --glass-border: rgba(255, 255, 255, 0.12);
@@ -148,6 +148,91 @@
       color: #fff;
     }
     .btn-modal-danger:active { transform: scale(0.97); }
+    /* --- GIAO DIỆN MODAL ĐÃ TÁCH BIỆT --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal-box {
+  background: rgba(20, 20, 38, 0.98);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 25px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: modalPopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPopUp {
+  from { transform: scale(0.93); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 15px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.modal-text {
+  font-size: 0.9rem;
+  color: #b0b0c8;
+  line-height: 1.6;
+  text-align: left;
+  margin-bottom: 20px;
+}
+.modal-text strong { color: #30d158; }
+.highlight {
+  color: #ff453a;
+  font-weight: bold;
+  background: rgba(255, 69, 58, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  margin-bottom: 20px;
+  text-align: center;
+  transition: 0.2s;
+}
+.modal-input:focus { border-color: #0a84ff; }
+.modal-actions { display: flex; gap: 12px; }
+.btn-modal {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-modal:active { transform: scale(0.98); }
+.btn-modal-cancel { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.btn-modal-cancel:hover { background: rgba(255, 255, 255, 0.15); }
+#btnConfirmPrompt { background: linear-gradient(135deg, #0a84ff, #005bb5); color: #fff; }
+#btnConfirmGetKey { background: linear-gradient(135deg, #30d158, #249941); color: #fff; }
   </style>
 </head>
 <body>
@@ -167,7 +252,6 @@
     App không có VIRUS đảm bảo an toàn cho thiết bị.</div>
     
     <div class="feature-tag">An Toàn • Chất Lượng • Hiệu Quả</div>
-    
     <div class="share-box">
       <span>🔑Key được Share miễn phí vào lúc<br> <strong>8h hoặc 10h tối</strong> hàng ngày tại nhóm Zalo :</span>
       <a href="https://zalo.me/g/ziivcp794" target="_blank" class="btn-box-zalo">👥 THAM GIA BOX ZALO</a>
@@ -188,23 +272,39 @@
     </label>
 
     <button class="btn-primary" id="btnLogin">ĐĂNG NHẬP</button>
-    <div class="admin-link" id="linkToAdmin">Bạn không có Key?</div>
-  </div>
+    <div style="margin-top: 18px; display: flex; justify-content: center; gap: 25px; font-size: 0.9rem;">
+  <span id="btnOpenPrompt" style="cursor: pointer; color: #b0b0c8; text-decoration: underline; transition: 0.2s;">Bạn không có key ?</span>
+  <span id="btnOpenGetKey" style="cursor: pointer; color: #0a84ff; font-weight: bold; text-decoration: underline; transition: 0.2s;">Get Key</span>
+</div>
 
-  <div class="modal-overlay" id="customPromptModal">
-    <div class="modal-box">
-      <div class="modal-title">Hệ Thống Phân Phối Key</div>
-      <div class="modal-text">
-        • Key được chia sẻ <strong>miễn phí</strong> vào lúc <strong>8h hoặc 10h tối hàng ngày</strong> tại Box Zalo.<br><br>
-        • Nếu bạn muốn mua Key vĩnh viễn hoặc cần mua File hỗ trợ kéo tâm ADR Hoặc Migul và Fluorite IOS vui lòng nhập mã xác nhận <span class="highlight">'vdanndzcute'</span> dưới đây để  chat trực tiếp với Admin FAROS.
-      </div>
-      <input type="text" id="modalPasswordInput" class="modal-input" placeholder="Nhập mã xác nhận tại đây..." autocomplete="off">
-      <div class="modal-actions">
-        <button class="btn-modal btn-modal-cancel" id="btnModalCancel">HỦY BỎ</button>
-        <button class="btn-modal btn-modal-confirm" id="btnModalConfirm">XÁC NHẬN</button>
-      </div>
+<div class="modal-overlay" id="customPromptModal">
+  <div class="modal-box">
+    <div class="modal-title">Hệ Thống Phân Phối Key</div>
+    <div class="modal-text">
+      • Key được chia sẻ <strong>miễn phí</strong> vào lúc <strong>8h hoặc 10h tối hàng ngày</strong> tại Box Zalo.<br><br>
+      • Nếu bạn muốn mua Key vĩnh viễn hoặc cần mua File hỗ trợ kéo tâm ADR Hoặc Migul và Fluorite IOS vui lòng nhập mã xác nhận <span class="highlight">'vdanndzcute'</span> dưới đây để chat trực tiếp với Admin FAROS.
+    </div>
+    <input type="text" id="modalPasswordInput" class="modal-input" placeholder="Nhập mã xác nhận tại đây..." autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-modal btn-modal-cancel" id="btnCancelPrompt">HỦY BỎ</button>
+      <button class="btn-modal btn-modal-confirm" id="btnConfirmPrompt">XÁC NHẬN</button>
     </div>
   </div>
+</div>
+
+<div class="modal-overlay" id="getKeyModal">
+  <div class="modal-box">
+    <div class="modal-title">LẤY KEY MIỄN PHÍ</div>
+    <div class="modal-text" style="text-align: center;">
+      Bạn sẽ được chuyển hướng sang trang web khác để vượt link nhận Key đăng nhập.<br><br>
+      Nhấn <strong>GET KEY NGAY</strong> để bắt đầu!
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal btn-modal-cancel" id="btnCancelGetKey">HỦY BỎ</button>
+      <button class="btn-modal btn-modal-confirm" id="btnConfirmGetKey">GET KEY NGAY</button>
+    </div>
+  </div>
+</div>
 
   <div class="modal-overlay" id="errorModal">
     <div class="modal-box">
@@ -223,6 +323,63 @@
     };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // --- LOGIC ĐIỀU KHIỂN HAI MODAL RIÊNG BIỆT ---
+const customPromptModal = document.getElementById('customPromptModal');
+const getKeyModal = document.getElementById('getKeyModal');
+const modalPasswordInput = document.getElementById('modalPasswordInput');
+
+// Mở - Đóng Modal "Bạn không có key ?"
+document.getElementById('btnOpenPrompt').addEventListener('click', () => {
+  customPromptModal.classList.add('active');
+  modalPasswordInput.value = '';
+});
+document.getElementById('btnCancelPrompt').addEventListener('click', () => {
+  customPromptModal.classList.remove('active');
+});
+
+// Xử lý xác nhận nhập mã mật khẩu admin công khai
+document.getElementById('btnConfirmPrompt').addEventListener('click', () => {
+  const pwd = modalPasswordInput.value.trim();
+  if (pwd === 'vdanndzcute') {
+    customPromptModal.classList.remove('active');
+    window.location.href = 'https://zalo.me/0389148483';
+  } else {
+    alert("Mã xác nhận không chính xác! Vui lòng kiểm tra lại.");
+  }
+});
+
+// Mở - Đóng Modal "Get Key"
+document.getElementById('btnOpenGetKey').addEventListener('click', () => {
+  getKeyModal.classList.add('active');
+});
+document.getElementById('btnCancelGetKey').addEventListener('click', () => {
+  getKeyModal.classList.remove('active');
+});
+
+// Xử lý chuyển hướng rút gọn link kiếm tiền thông minh
+document.getElementById('btnConfirmGetKey').addEventListener('click', () => {
+  getKeyModal.classList.remove('active');
+  
+  // 1. Tự động lấy link hiện tại và chuyển hướng sang file keydaget.html kèm theo mã khóa bí mật (?pass=true)
+  let currentPath = window.location.href.split('?')[0]; // Xóa các tham số cũ nếu có
+  let destinationUrl = currentPath.replace('nhapkeyv2.html', 'keydaget.html');
+  
+  // Đảm bảo link đích phải là trang keydaget
+  if (!destinationUrl.includes('keydaget.html')) {
+     destinationUrl += 'keydaget.html';
+  }
+  
+  // Thêm chìa khóa ?pass=true để trang keydaget.html biết là đã vượt link thành công
+  destinationUrl += '?pass=true';
+  
+  let encodedUrl = encodeURIComponent(destinationUrl);
+  
+  // 2. Chuyển hướng sang TapLayMa với Token API của bạn
+  let tapLayMaLink = `https://api.taplayma.com/st?token=28afb061-cd33-4178-98e5-161f3f88e996&url=${encodedUrl}`;
+  window.open(tapLayMaLink, '_blank');
+});
+
 
     // Hiệu ứng bụi nền mượt mà
     const dCanvas = document.getElementById('dustCanvas'); const dCtx = dCanvas.getContext('2d'); let particles = [];
@@ -288,7 +445,7 @@
           }
         }
         
-        // ĐÓNG GÓI DỮ LIỆU ĐỂ BẮN SANG FILE Panel_214_TurboheadFaros_v2.HTML
+        // ĐÓNG GÓI DỮ LIỆU ĐỂ BẮN SANG FILE Panel_214_TurboheadFaros_v2.html
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('faros_current_key', inputKey);
         
