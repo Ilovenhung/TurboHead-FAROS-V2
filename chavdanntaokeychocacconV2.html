@@ -95,8 +95,8 @@
     .btn-option { width: 100%; padding: 12px 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; font-size: 0.88rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: 0.2s; }
     .btn-option:active { background: var(--ios-blue); border-color: var(--ios-blue); }
 
-    /* CSS CHO CUSTOM SELECT DROPDOWN */
-    .faros-custom-select-container { flex: 1; position: relative; display: flex; align-items: stretch; }
+        /* CSS CHO CUSTOM SELECT DROPDOWN */
+    .faros-custom-select-container { flex: 1; position: relative; display: flex; align-items: stretch; z-index: 100; }
     .faros-custom-select-btn {
         width: 100%; background: rgba(0,0,0,0.35); border: 1.5px solid var(--glass-border); 
         border-radius: 12px; color: #fff; font-size: 0.95rem; font-weight: 600; 
@@ -371,13 +371,16 @@
           let dev = k.devices ? Object.keys(k.devices).length : 0;
           let statusHtml = '';
           
-          let durStr = k.durationDays;
-          let textDur = '';
+                    let durStr = k.durationDays;
+          let textDur = 'Không rõ';
           if (durStr === 'lifetime') textDur = 'Vĩnh viễn';
-          else if (typeof durStr === 'number' || !isNaN(durStr)) textDur = `${durStr} Ngày`;
-          else if (durStr.includes('MIN')) textDur = `${durStr.replace('MIN', '')} Phút`;
-          else if (durStr.includes('H')) textDur = `${durStr.replace('H', '')} Giờ`;
-          else if (durStr.includes('D')) textDur = `${durStr.replace('D', '')} Ngày`;
+          else if (typeof durStr === 'number' || (typeof durStr === 'string' && !isNaN(durStr) && durStr.trim() !== '')) textDur = `${durStr} Ngày`;
+          else if (typeof durStr === 'string') {
+            if (durStr.includes('MIN')) textDur = `${durStr.replace('MIN', '')} Phút`;
+            else if (durStr.includes('H')) textDur = `${durStr.replace('H', '')} Giờ`;
+            else if (durStr.includes('D')) textDur = `${durStr.replace('D', '')} Ngày`;
+          }
+
 
           if (durStr === 'lifetime') {
             statusHtml = '<span style="color: #0a84ff; font-weight:700;">Vĩnh viễn</span>';
