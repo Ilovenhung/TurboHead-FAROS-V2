@@ -418,14 +418,26 @@
         }
         let devices = keyData.devices || {};
         if(!devices[myDeviceId]) {
-          if(Object.keys(devices).length >= keyData.limit) {
-            showError('🚫 <strong>Key đã đạt giới hạn thiết bị tối đa!</strong><br><br>Vui lòng liên hệ Admin FAROS<br>để nhận key hoặc mua Key mới.'); 
-            clearSavedLogin();
-            return;
-          } else {
-            db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + inputKey + '/devices/' + myDeviceId).set(true);
-          }
-        }
+  if(Object.keys(devices).length >= keyData.limit) {
+    showError('🚫 <strong>Key đã đạt giới hạn thiết bị tối đa!</strong><br><br>Vui lòng liên hệ Admin FAROS<br>để nhận key hoặc mua Key mới.');
+    clearSavedLogin();
+    return;
+  } else {
+    // Tạo một object để update nhiều dữ liệu cùng lúc
+    let updates = {};
+    updates['/devices/' + myDeviceId] = true;
+
+    // Kiểm tra xem key đã được kích hoạt thời gian chưa (trường hợp Chưa KH)
+    if (!keyData.expiresAt && !keyData.expire) {
+        // Lấy thời lượng từ key (nếu admin panel tạo key 1 ngày, set durationHours = 24)
+        // Nếu object không có sẵn duration, mặc định sẽ gán là 24 giờ
+        let durationHours = keyData.durationHours || 24; 
+        updates['/expire'] = Date.now() + (durationHours * 60 * 60 * 1000);
+    }
+
+    db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + inputKey).update(updates);
+  }
+}
         
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('faros_current_key', inputKey);
